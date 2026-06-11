@@ -409,15 +409,24 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200">
+    <div 
+      className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200"
+      style={!currentUser ? {
+        backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(/login.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      } : undefined}
+    >
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200">
         <div className="flex items-center gap-3">
           {darkMode ? (
-            <img src="/logo-dark.png" alt="Temperies Prode Mundial 2026" className="h-10 sm:h-12 w-auto object-contain" />
+            <img src="/logo-dark.png" alt="Temperies Prode Mundial 2026" className="h-14 sm:h-18 w-auto object-contain" />
           ) : (
-            <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-10 sm:h-12">
-              <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-8 sm:h-10 w-auto object-contain" />
+            <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-14 sm:h-18">
+              <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-12 sm:h-16 w-auto object-contain" />
             </div>
           )}
           <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
@@ -474,10 +483,10 @@ export default function App() {
       </header>
 
       {/* Main Body */}
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-8 flex-1">
+      <main className={`max-w-7xl mx-auto w-full px-4 sm:px-6 mt-8 flex-1 ${!currentUser ? 'flex items-center justify-center min-h-[calc(100vh-160px)]' : ''}`}>
         {!currentUser ? (
           /* Login Screen */
-          <div className="max-w-md mx-auto mt-12 sm:mt-20">
+          <div className="max-w-md w-full mx-auto my-auto">
             <div
               className={`${CARD_STYLE} border-indigo-500/20 shadow-indigo-500/10`}
             >
@@ -550,7 +559,6 @@ export default function App() {
               <div className="mt-6 text-center">
                 <p className="text-[10px] text-text-muted font-mono mt-1">
                   SOLICITAR contraseña por discord a Ramiro Toulemonde:{" "}
-                  <span className="text-text-secondary font-bold">admin</span>
                 </p>
               </div>
             </div>
