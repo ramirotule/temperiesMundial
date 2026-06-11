@@ -112,13 +112,22 @@ function generateMatches() {
         dayOffset = 24 + groups.indexOf(groupChar);
       }
       
-      const timesART = [16, 19, 22, 13];
-      const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
-      const hourART = timesART[timeSlot];
-      const hourUTC = hourART + 3;
-      const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
-
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
+      
+      let offset = -5; // Default (CDT)
+      if (stadium.includes('Azteca') || stadium.includes('BBVA') || stadium.includes('Akron')) {
+        offset = -6; // CST (Mexico City, Monterrey, Guadalajara)
+      } else if (stadium.includes('MetLife') || stadium.includes('Mercedes-Benz') || stadium.includes('Hard Rock') || stadium.includes('BMO Field') || stadium.includes('Toronto')) {
+        offset = -4; // EDT (NY, Atlanta, Miami, Toronto)
+      } else if (stadium.includes('SoFi') || stadium.includes('Lumen') || stadium.includes('Levi') || stadium.includes('Vancouver') || stadium.includes('BC Place')) {
+        offset = -7; // PDT (LA, Seattle, San Francisco, Vancouver)
+      }
+      
+      const localHours = [13, 16, 18, 20];
+      const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
+      const localHour = localHours[timeSlot];
+      const hourUTC = localHour - offset;
+      const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
       
       let status = 'scheduled';
       let homeScore = null;
