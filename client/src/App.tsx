@@ -12,8 +12,9 @@ import {
   Sun,
   Moon,
   BookOpen,
+  Trophy,
 } from "lucide-react";
-import type { Match, Prediction, User, UserState } from "./types";
+import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
 import { TEAMS } from "./data/db";
 
 // Tailwind glassmorphism styles helper using CSS theme variables
@@ -25,6 +26,144 @@ const INPUT_STYLE =
   "w-12 h-10 text-center bg-bg-input border border-border-color rounded-lg text-lg font-bold text-text-primary focus:outline-none focus:border-indigo-500 transition-colors";
 const BTN_SECONDARY =
   "px-6 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 font-semibold rounded-xl transition-all active:scale-98 cursor-pointer";
+
+// World Cup group standings calculation & simulation engine
+function computeGroupStandingsForGroup(
+  groupChar: string,
+  matchesList: Match[],
+  teamsList: Team[]
+): TeamStanding[] {
+  const groupTeams = teamsList.filter(t => t.group === groupChar);
+  const groupMatches = matchesList.filter(m => m.group === groupChar);
+  
+  const standingsMap: Record<string, TeamStanding> = {};
+  groupTeams.forEach(team => {
+    standingsMap[team.code] = {
+      teamCode: team.code,
+      teamName: team.name,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+      points: 0,
+      status: 'in_play'
+    };
+  });
+  
+  groupMatches.forEach(match => {
+    if (match.homeScore !== null && match.awayScore !== null) {
+      const home = standingsMap[match.homeTeam];
+      const away = standingsMap[match.awayTeam];
+      if (!home || !away) return;
+      
+      home.played += 1;
+      away.played += 1;
+      home.goalsFor += match.homeScore;
+      home.goalsAgainst += match.awayScore;
+      away.goalsFor += match.awayScore;
+      away.goalsAgainst += match.homeScore;
+      
+      if (match.homeScore > match.awayScore) {
+        home.won += 1;
+        home.points += 3;
+        away.lost += 1;
+      } else if (match.homeScore < match.awayScore) {
+        away.won += 1;
+        away.points += 3;
+        home.lost += 1;
+      } else {
+        home.drawn += 1;
+        home.points += 1;
+        away.drawn += 1;
+        away.points += 1;
+      }
+    }
+  });
+  
+  groupTeams.forEach(team => {
+    const s = standingsMap[team.code];
+    if (s) {
+      s.goalDifference = s.goalsFor - s.goalsAgainst;
+    }
+  });
+  
+  const standings = Object.values(standingsMap);
+  standings.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+  
+  return standings;
+}
+
+function getGroupStandingsWithStatus(
+  groupChar: string,
+  matchesList: Match[],
+  teamsList: Team[]
+): TeamStanding[] {
+  const currentStandings = computeGroupStandingsForGroup(groupChar, matchesList, teamsList);
+  const groupMatches = matchesList.filter(m => m.group === groupChar);
+  
+  const remainingMatches = groupMatches.filter(m => m.homeScore === null || m.awayScore === null || m.status === 'scheduled');
+  
+  if (remainingMatches.length === 0) {
+    return currentStandings.map((s, idx) => ({
+      ...s,
+      status: idx < 2 ? 'qualified' : 'eliminated'
+    }));
+  }
+  
+  const qualificationCount: Record<string, number> = {};
+  const totalScenarios = Math.pow(3, remainingMatches.length);
+  
+  const teamCodes = currentStandings.map(s => s.teamCode);
+  teamCodes.forEach(code => {
+    qualificationCount[code] = 0;
+  });
+  
+  function simulate(matchIndex: number, simulatedMatches: Match[]) {
+    if (matchIndex === remainingMatches.length) {
+      const simStandings = computeGroupStandingsForGroup(groupChar, simulatedMatches, teamsList);
+      qualificationCount[simStandings[0].teamCode] += 1;
+      qualificationCount[simStandings[1].teamCode] += 1;
+      return;
+    }
+    
+    const match = remainingMatches[matchIndex];
+    
+    // Outcome 1: Home Win
+    const matchHomeWin = { ...match, homeScore: 1, awayScore: 0, status: 'finished' as const };
+    const matchesHomeWin = simulatedMatches.map(m => m.id === match.id ? matchHomeWin : m);
+    simulate(matchIndex + 1, matchesHomeWin);
+    
+    // Outcome 2: Draw
+    const matchDraw = { ...match, homeScore: 1, awayScore: 1, status: 'finished' as const };
+    const matchesDraw = simulatedMatches.map(m => m.id === match.id ? matchDraw : m);
+    simulate(matchIndex + 1, matchesDraw);
+    
+    // Outcome 3: Away Win
+    const matchAwayWin = { ...match, homeScore: 0, awayScore: 1, status: 'finished' as const };
+    const matchesAwayWin = simulatedMatches.map(m => m.id === match.id ? matchAwayWin : m);
+    simulate(matchIndex + 1, matchesAwayWin);
+  }
+  
+  simulate(0, matchesList);
+  
+  return currentStandings.map(s => {
+    const qualifiedScenarios = qualificationCount[s.teamCode];
+    let status: 'qualified' | 'eliminated' | 'in_play' = 'in_play';
+    if (qualifiedScenarios === totalScenarios) {
+      status = 'qualified';
+    } else if (qualifiedScenarios === 0) {
+      status = 'eliminated';
+    }
+    return { ...s, status };
+  });
+}
 
 // Standard scoring engine
 function calculatePoints(
@@ -163,9 +302,9 @@ export default function App() {
     }
   };
 
-  // View tabs: 'matches' | 'leaderboard' | 'rules' | 'admin'
+  // View tabs: 'matches' | 'leaderboard' | 'rules' | 'groupStandings' | 'admin'
   const [activeTab, setActiveTab] = useState<
-    "matches" | "leaderboard" | "rules" | "admin"
+    "matches" | "leaderboard" | "rules" | "groupStandings" | "admin"
   >("matches");
 
   // Filters for matches
@@ -431,15 +570,30 @@ export default function App() {
       }
     >
       {/* Top Header */}
-      <header 
+      <header
         className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200"
-        style={!currentUser ? { backgroundColor: '#090E1D', borderColor: 'rgba(30, 41, 59, 0.4)' } : undefined}
+        style={
+          !currentUser
+            ? {
+                backgroundColor: "#090E1D",
+                borderColor: "rgba(30, 41, 59, 0.4)",
+              }
+            : undefined
+        }
       >
         <div className="flex items-center gap-3">
           {currentUser && (
             <div
-              onClick={!currentUser ? () => setShowLoginForm(prev => !prev) : undefined}
-              className={!currentUser ? "cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200" : ""}
+              onClick={
+                !currentUser
+                  ? () => setShowLoginForm((prev) => !prev)
+                  : undefined
+              }
+              className={
+                !currentUser
+                  ? "cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200"
+                  : ""
+              }
               title={!currentUser ? "Hacé click para ingresar" : undefined}
             >
               {darkMode ? (
@@ -700,7 +854,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <Users className="w-4 h-4" /> Tabla de Posiciones
+                  <Users className="w-4 h-4" /> Tabla de Posiciones de la T
                 </button>
 
                 <button
@@ -712,6 +866,17 @@ export default function App() {
                   }`}
                 >
                   <BookOpen className="w-4 h-4" /> Reglamento
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("groupStandings")}
+                  className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeTab === "groupStandings"
+                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                      : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
+                  }`}
+                >
+                  <Trophy className="w-4 h-4" /> Posiciones Mundial
                 </button>
 
                 {currentUser.role === "admin" && (
@@ -821,8 +986,14 @@ export default function App() {
                     .filter((m) => {
                       if (!teamSearch.trim()) return true;
                       const searchLower = teamSearch.toLowerCase();
-                      const homeTeamName = TEAMS.find((t) => t.code === m.homeTeam)?.name.toLowerCase() || "";
-                      const awayTeamName = TEAMS.find((t) => t.code === m.awayTeam)?.name.toLowerCase() || "";
+                      const homeTeamName =
+                        TEAMS.find(
+                          (t) => t.code === m.homeTeam,
+                        )?.name.toLowerCase() || "";
+                      const awayTeamName =
+                        TEAMS.find(
+                          (t) => t.code === m.awayTeam,
+                        )?.name.toLowerCase() || "";
                       return (
                         homeTeamName.includes(searchLower) ||
                         awayTeamName.includes(searchLower) ||
@@ -1103,7 +1274,9 @@ export default function App() {
             {/* TAB: RULES / REGLAMENTO */}
             {activeTab === "rules" && (
               <div className="space-y-6">
-                <div className={`${CARD_STYLE} relative overflow-hidden animate-fade-in`}>
+                <div
+                  className={`${CARD_STYLE} relative overflow-hidden animate-fade-in`}
+                >
                   <div className="flex items-center gap-3 border-b border-border-color pb-4 mb-6">
                     <div className="p-2.5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl text-indigo-500 dark:text-indigo-400">
                       <BookOpen className="w-5 h-5" />
@@ -1113,7 +1286,8 @@ export default function App() {
                         Reglamento del Prode Mundial 2026
                       </h3>
                       <p className="text-xs text-text-muted mt-0.5">
-                        Leé las reglas y entendé cómo funciona el sistema de puntos
+                        Leé las reglas y entendé cómo funciona el sistema de
+                        puntos
                       </p>
                     </div>
                   </div>
@@ -1129,19 +1303,28 @@ export default function App() {
                           <li className="flex items-start gap-2.5">
                             <span className="text-indigo-500 font-bold">•</span>
                             <span>
-                              <strong>Límite de tiempo:</strong> Todos los pronósticos deben ser cargados y guardados <strong>antes del silbatazo inicial</strong> de cada partido.
+                              <strong>Límite de tiempo:</strong> Todos los
+                              pronósticos deben ser cargados y guardados{" "}
+                              <strong>antes del silbatazo inicial</strong> de
+                              cada partido.
                             </span>
                           </li>
                           <li className="flex items-start gap-2.5">
                             <span className="text-indigo-500 font-bold">•</span>
                             <span>
-                              <strong>Bloqueo automático:</strong> Una vez comenzado el partido (o al pasar la hora oficial), el sistema deshabilitará la tarjeta correspondiente del partido y ya no se podrán realizar ni modificar predicciones.
+                              <strong>Bloqueo automático:</strong> Una vez
+                              comenzado el partido (o al pasar la hora oficial),
+                              el sistema deshabilitará la tarjeta
+                              correspondiente del partido y ya no se podrán
+                              realizar ni modificar predicciones.
                             </span>
                           </li>
                           <li className="flex items-start gap-2.5">
                             <span className="text-indigo-500 font-bold">•</span>
                             <span>
-                              <strong>Guardado de datos:</strong> Asegurate de presionar el botón <strong>"Guardar"</strong> en cada partido para confirmar tus goles.
+                              <strong>Guardado de datos:</strong> Asegurate de
+                              presionar el botón <strong>"Guardar"</strong> en
+                              cada partido para confirmar tus goles.
                             </span>
                           </li>
                         </ul>
@@ -1155,13 +1338,19 @@ export default function App() {
                           <li className="flex items-start gap-2.5">
                             <span className="text-indigo-500 font-bold">•</span>
                             <span>
-                              <strong>Transparencia:</strong> Todos los empleados participan bajo las mismas condiciones. Podés ver las predicciones de tus compañeros una vez que empiece el partido para garantizar juego limpio.
+                              <strong>Transparencia:</strong> Todos los
+                              empleados participan bajo las mismas condiciones.
+                              Podés ver las predicciones de tus compañeros una
+                              vez que empiece el partido para garantizar juego
+                              limpio.
                             </span>
                           </li>
                           <li className="flex items-start gap-2.5">
                             <span className="text-indigo-500 font-bold">•</span>
                             <span>
-                              <strong>Soporte:</strong> En caso de problemas técnicos o si olvidaste tu contraseña, solicitá asistencia al administrador vía Discord.
+                              <strong>Soporte:</strong> En caso de problemas
+                              técnicos o si olvidaste tu contraseña, solicitá
+                              asistencia al administrador vía Discord.
                             </span>
                           </li>
                         </ul>
@@ -1174,7 +1363,8 @@ export default function App() {
                         📊 Sistema de Puntajes
                       </h4>
                       <p className="text-xs text-text-secondary leading-relaxed">
-                        Los puntos se asignan al finalizar cada partido según el grado de acierto de tu pronóstico:
+                        Los puntos se asignan al finalizar cada partido según el
+                        grado de acierto de tu pronóstico:
                       </p>
 
                       <div className="space-y-3 mt-3">
@@ -1184,10 +1374,14 @@ export default function App() {
                             +5 PTS
                           </div>
                           <div>
-                            <h5 className="text-xs font-bold text-text-primary">Acierto Exacto</h5>
+                            <h5 className="text-xs font-bold text-text-primary">
+                              Acierto Exacto
+                            </h5>
                             <p className="text-[11px] text-text-muted mt-1 leading-normal">
                               Le pegás al resultado exacto del partido. <br />
-                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 2 - 1 | Real: 2 - 1</span>
+                              <span className="font-mono text-indigo-400/90">
+                                Ej: Pronóstico: 2 - 1 | Real: 2 - 1
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -1198,10 +1392,17 @@ export default function App() {
                             +3 PTS
                           </div>
                           <div>
-                            <h5 className="text-xs font-bold text-text-primary">Diferencia de Goles</h5>
+                            <h5 className="text-xs font-bold text-text-primary">
+                              Diferencia de Goles
+                            </h5>
                             <p className="text-[11px] text-text-muted mt-1 leading-normal">
-                              Acertás al ganador (o empate) y también la diferencia de goles, pero no el marcador exacto. <br />
-                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 3 - 1 (+2 dif) | Real: 2 - 0 (+2 dif)</span>
+                              Acertás al ganador (o empate) y también la
+                              diferencia de goles, pero no el marcador exacto.{" "}
+                              <br />
+                              <span className="font-mono text-indigo-400/90">
+                                Ej: Pronóstico: 3 - 1 (+2 dif) | Real: 2 - 0 (+2
+                                dif)
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -1212,10 +1413,15 @@ export default function App() {
                             +2 PTS
                           </div>
                           <div>
-                            <h5 className="text-xs font-bold text-text-primary">Resultado / Ganador Únicamente</h5>
+                            <h5 className="text-xs font-bold text-text-primary">
+                              Resultado / Ganador Únicamente
+                            </h5>
                             <p className="text-[11px] text-text-muted mt-1 leading-normal">
-                              Acertás quién gana (o el empate) pero con otra cantidad de goles y diferente margen. <br />
-                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 1 - 0 | Real: 3 - 1</span>
+                              Acertás quién gana (o el empate) pero con otra
+                              cantidad de goles y diferente margen. <br />
+                              <span className="font-mono text-indigo-400/90">
+                                Ej: Pronóstico: 1 - 0 | Real: 3 - 1
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -1226,7 +1432,9 @@ export default function App() {
                             0 PTS
                           </div>
                           <div>
-                            <h5 className="text-xs font-bold text-text-primary">Sin Aciertos</h5>
+                            <h5 className="text-xs font-bold text-text-primary">
+                              Sin Aciertos
+                            </h5>
                             <p className="text-[11px] text-text-muted mt-1 leading-normal">
                               No le pegás al ganador ni al empate.
                             </p>
@@ -1234,6 +1442,156 @@ export default function App() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: WORLD CUP GROUP STANDINGS */}
+            {activeTab === "groupStandings" && (
+              <div className="space-y-6">
+                <div className={`${CARD_STYLE} relative overflow-hidden animate-fade-in`}>
+                  <div className="flex items-center gap-3 border-b border-border-color pb-4 mb-6">
+                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl text-indigo-500 dark:text-indigo-400">
+                      <Trophy className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-text-primary">
+                        Posiciones por Grupo del Mundial
+                      </h3>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        Tablas calculadas dinámicamente según los resultados oficiales de los partidos
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Grid of Groups */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"].map((groupChar) => {
+                      const standings = getGroupStandingsWithStatus(groupChar, matches, TEAMS);
+                      return (
+                        <div key={groupChar} className="bg-slate-500/5 border border-border-color rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between mb-4 pb-2 border-b border-border-color">
+                              <h4 className="font-extrabold text-base text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
+                                Grupo {groupChar}
+                              </h4>
+                              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                                Clasifican los 2 primeros
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="text-text-muted font-bold border-b border-border-color">
+                                    <th className="py-2.5 px-2 text-center w-8">#</th>
+                                    <th className="py-2.5 px-2">Selección</th>
+                                    <th className="py-2.5 px-2 text-center w-10">PJ</th>
+                                    <th className="py-2.5 px-1 text-center w-8">G</th>
+                                    <th className="py-2.5 px-1 text-center w-8">E</th>
+                                    <th className="py-2.5 px-1 text-center w-8">P</th>
+                                    <th className="py-2.5 px-1 text-center w-10">GF</th>
+                                    <th className="py-2.5 px-1 text-center w-10">GC</th>
+                                    <th className="py-2.5 px-2 text-center w-12">DG</th>
+                                    <th className="py-2.5 px-2 text-center w-12 font-black text-indigo-500 dark:text-indigo-400">Pts</th>
+                                    <th className="py-2.5 px-2 text-center w-24">Estado</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {standings.map((teamStanding, idx) => {
+                                    const isTopTwo = idx < 2;
+                                    return (
+                                      <tr 
+                                        key={teamStanding.teamCode} 
+                                        className={`border-b border-border-color/40 hover:bg-slate-500/10 transition-colors ${
+                                          isTopTwo 
+                                            ? "bg-emerald-500/5 dark:bg-emerald-500/3" 
+                                            : ""
+                                        }`}
+                                      >
+                                        {/* Position */}
+                                        <td className={`py-3 px-2 text-center font-bold ${
+                                          isTopTwo ? "text-emerald-500" : "text-text-muted"
+                                        }`}>
+                                          {idx + 1}
+                                        </td>
+                                        
+                                        {/* Team Name + Flag */}
+                                        <td className="py-3 px-2 font-bold text-text-primary">
+                                          <div className="flex items-center gap-2">
+                                            <img
+                                              src={`https://flagcdn.com/w20/${teamStanding.teamCode}.png`}
+                                              alt={teamStanding.teamName}
+                                              className="w-5 h-3.5 object-cover rounded shadow-sm border border-border-color"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).src =
+                                                  "https://flagcdn.com/w20/un.png";
+                                              }}
+                                            />
+                                            <span className="truncate max-w-[120px] sm:max-w-none">
+                                              {teamStanding.teamName}
+                                            </span>
+                                          </div>
+                                        </td>
+                                        
+                                        {/* PJ */}
+                                        <td className="py-3 px-2 text-center text-text-secondary">{teamStanding.played}</td>
+                                        {/* G */}
+                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.won}</td>
+                                        {/* E */}
+                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.drawn}</td>
+                                        {/* P */}
+                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.lost}</td>
+                                        {/* GF */}
+                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.goalsFor}</td>
+                                        {/* GC */}
+                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.goalsAgainst}</td>
+                                        
+                                        {/* DG */}
+                                        <td className={`py-3 px-2 text-center font-bold ${
+                                          teamStanding.goalDifference > 0 
+                                            ? "text-emerald-500" 
+                                            : teamStanding.goalDifference < 0 
+                                              ? "text-rose-500" 
+                                              : "text-text-muted"
+                                        }`}>
+                                          {teamStanding.goalDifference > 0 ? `+${teamStanding.goalDifference}` : teamStanding.goalDifference}
+                                        </td>
+                                        
+                                        {/* Pts */}
+                                        <td className="py-3 px-2 text-center font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/5">
+                                          {teamStanding.points}
+                                        </td>
+                                        
+                                        {/* Status badge */}
+                                        <td className="py-3 px-2 text-center">
+                                          {teamStanding.status === "qualified" && (
+                                            <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                              Clasificado
+                                            </span>
+                                          )}
+                                          {teamStanding.status === "eliminated" && (
+                                            <span className="bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                              Eliminado
+                                            </span>
+                                          )}
+                                          {teamStanding.status === "in_play" && (
+                                            <span className="bg-slate-500/10 border border-slate-500/20 text-text-muted font-bold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                              En juego
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

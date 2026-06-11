@@ -38,3 +38,17 @@ export interface UserState {
   diffMatches: number;
   predictionsCount: number;
 }
+
+export interface TeamStanding {
+  teamCode: string;
+  teamName: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  status: "qualified" | "eliminated" | "in_play";
+}
