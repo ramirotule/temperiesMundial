@@ -413,9 +413,13 @@ export default function App() {
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-10 sm:h-12">
-            <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-8 sm:h-10 w-auto object-contain" />
-          </div>
+          {darkMode ? (
+            <img src="/logo-dark.png" alt="Temperies Prode Mundial 2026" className="h-10 sm:h-12 w-auto object-contain" />
+          ) : (
+            <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-10 sm:h-12">
+              <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-8 sm:h-10 w-auto object-contain" />
+            </div>
+          )}
           <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
             <span>🇦🇷</span>
             <span>¡Vamos Argentina!</span>
