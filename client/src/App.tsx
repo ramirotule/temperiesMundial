@@ -210,13 +210,15 @@ export default function App() {
 
         matches.forEach(match => {
           const pred = userPredictions[match.id];
-          if (pred && match.homeScore !== null && match.awayScore !== null) {
+          if (pred) {
             predictionsCount++;
-            const res = calculatePoints(match, pred);
-            points += res.points;
-            if (res.type === 'exact') exactMatches++;
-            else if (res.type === 'diff') diffMatches++;
-            else if (res.type === 'outcome') outcomeMatches++;
+            if (match.homeScore !== null && match.awayScore !== null) {
+              const res = calculatePoints(match, pred);
+              points += res.points;
+              if (res.type === 'exact') exactMatches++;
+              else if (res.type === 'diff') diffMatches++;
+              else if (res.type === 'outcome') outcomeMatches++;
+            }
           }
         });
 
