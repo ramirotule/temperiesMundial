@@ -24,10 +24,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: prode-backend
-          type: web
-          property: url
+        value: https://temperies-mundial-backend.onrender.com
 
 databases:
   # 3. PostgreSQL Database
