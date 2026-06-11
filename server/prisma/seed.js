@@ -166,12 +166,36 @@ async function main() {
   await prisma.match.deleteMany();
   await prisma.user.deleteMany();
   
+  const PASSWORD_MAP = {
+    'Eduardo Rodriguez': 'edu.941',
+    'Gabriel Vergara': 'gab.728',
+    'Matias Mercado': 'mat.109',
+    'Alejandro Riccillo': 'ale.852',
+    'Claudio Mazolli': 'cla.491',
+    'Ramiro Toulemonde': 'ram.305',
+    'Yesica Arevalo': 'yes.673',
+    'Federico Martinez': 'fed.214',
+    'Mauricio Aiello': 'mau.836',
+    'Milagros Aranzabe': 'mil.198',
+    'Rocio Smidt': 'roc.542',
+    'Alejandro Morreale': 'mor.703',
+    'Daiana': 'dai.619',
+    'Leandro Saraceno': 'lea.285',
+    'Franco Flores': 'fra.390',
+    'Nicola Cocciaretti': 'nic.571',
+    'Guido Arce': 'gui.843',
+    'Joaquin Burgos': 'joa.167',
+    'Lucas Gil': 'luc.902',
+    'Matias Dieguez': 'die.384',
+    'Nacho': 'nac.750',
+    'Conrado Blanco': 'con.426'
+  };
+
   // 1. Seed Users
   const usersToCreate = [
     { username: 'admin', name: 'Administrador', role: 'admin', avatarSeed: 'admin', password: 'admin' },
     ...EMPLOYEES.map((name, idx) => {
-      const firstName = name.split(' ')[0];
-      const password = `${firstName}2026`;
+      const password = PASSWORD_MAP[name] || '1234';
       return {
         username: name.toLowerCase().replace(/\s+/g, '.'),
         name,
