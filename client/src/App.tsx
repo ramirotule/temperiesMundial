@@ -10,7 +10,6 @@ import {
   Check, 
   Clock, 
   AlertCircle,
-  RefreshCw,
   Sun,
   Moon
 } from 'lucide-react';
@@ -321,30 +320,6 @@ export default function App() {
     }
   };
 
-  // Quick reset database for testing demo
-  const handleResetData = async () => {
-    if (confirm("¿Estás seguro de que querés reiniciar la base de datos a sus valores iniciales? Esto reiniciará las predicciones simuladas.")) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/reset`, { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.error || 'Error al reiniciar datos.');
-          return;
-        }
-        
-        // Refresh page or re-fetch data
-        const [resMatches, resPredictions] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/matches`).then(r => r.json()),
-          fetch(`${API_BASE_URL}/api/predictions`).then(r => r.json())
-        ]);
-        setMatches(resMatches);
-        setPredictions(resPredictions);
-        alert(data.message || 'Base de datos demo restablecida.');
-      } catch (error) {
-        alert('Error de conexión al reiniciar datos.');
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200">
@@ -553,13 +528,7 @@ export default function App() {
                 )}
               </div>
 
-              {/* Reset Data Button for Demo */}
-              <button 
-                onClick={handleResetData}
-                className="px-4 py-2 bg-bg-card border border-border-color text-text-secondary hover:text-text-primary rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Reiniciar Datos Demo
-              </button>
+
             </div>
 
             {/* TAB CONTENTS */}

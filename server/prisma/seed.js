@@ -125,20 +125,6 @@ function generateMatches() {
       let homeScore = null;
       let awayScore = null;
       
-      if (matchIndex <= 6) {
-        status = 'finished';
-        if (matchIndex === 1) { homeScore = 2; awayScore = 1; }
-        else if (matchIndex === 2) { homeScore = 1; awayScore = 1; }
-        else if (matchIndex === 3) { homeScore = 0; awayScore = 2; }
-        else if (matchIndex === 4) { homeScore = 3; awayScore = 2; }
-        else if (matchIndex === 5) { homeScore = 1; awayScore = 0; }
-        else { homeScore = 2; awayScore = 2; }
-      } else if (matchIndex === 7 || matchIndex === 8) {
-        status = 'live';
-        homeScore = 1;
-        awayScore = 0;
-      }
-      
       matches.push({
         id: `M${matchIndex.toString().padStart(2, '0')}`,
         homeTeam: pair.home.code,
@@ -222,40 +208,6 @@ async function main() {
   }
   console.log(`Created ${createdMatches.length} matches.`);
 
-  // 3. Seed Mock Predictions for first 12 matches for employees
-  let predictionsCount = 0;
-  const employees = createdUsers.filter(u => u.role !== 'admin');
-  const first12Matches = createdMatches.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 12);
-
-  for (const user of employees) {
-    for (const match of first12Matches) {
-      const rand = Math.random();
-      let homeScore = 1;
-      let awayScore = 1;
-      
-      if (rand < 0.4) {
-        homeScore = Math.floor(Math.random() * 3);
-        awayScore = Math.floor(Math.random() * 2);
-      } else if (rand < 0.7) {
-        homeScore = Math.floor(Math.random() * 2);
-        awayScore = Math.floor(Math.random() * 3);
-      } else {
-        homeScore = Math.floor(Math.random() * 2);
-        awayScore = homeScore;
-      }
-      
-      await prisma.prediction.create({
-        data: {
-          userId: user.id,
-          matchId: match.id,
-          homeScore,
-          awayScore,
-        }
-      });
-      predictionsCount++;
-    }
-  }
-  console.log(`Created ${predictionsCount} mock predictions.`);
   console.log('Seeding completed successfully.');
 }
 
