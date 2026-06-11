@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Sun,
   Moon,
+  BookOpen,
 } from "lucide-react";
 import type { Match, Prediction, User, UserState } from "./types";
 import { TEAMS } from "./data/db";
@@ -162,15 +163,16 @@ export default function App() {
     }
   };
 
-  // View tabs: 'matches' | 'leaderboard' | 'admin'
+  // View tabs: 'matches' | 'leaderboard' | 'rules' | 'admin'
   const [activeTab, setActiveTab] = useState<
-    "matches" | "leaderboard" | "admin"
+    "matches" | "leaderboard" | "rules" | "admin"
   >("matches");
 
   // Filters for matches
   const [groupFilter, setGroupFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [showTodayOnly, setShowTodayOnly] = useState<boolean>(false);
+  const [teamSearch, setTeamSearch] = useState<string>("");
 
   const isTodayArgentina = (dateStr: string) => {
     try {
@@ -701,6 +703,17 @@ export default function App() {
                   <Users className="w-4 h-4" /> Tabla de Posiciones
                 </button>
 
+                <button
+                  onClick={() => setActiveTab("rules")}
+                  className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeTab === "rules"
+                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                      : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" /> Reglamento
+                </button>
+
                 {currentUser.role === "admin" && (
                   <button
                     onClick={() => setActiveTab("admin")}
@@ -765,8 +778,20 @@ export default function App() {
                         <option value="All">Todos</option>
                         <option value="scheduled">Pendientes</option>
                         <option value="live">En Vivo</option>
-                        <option value="finished">Finalizados</option>
                       </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                        Buscar equipo:
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Ej: Argentina..."
+                        value={teamSearch}
+                        onChange={(e) => setTeamSearch(e.target.value)}
+                        className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500 placeholder-text-muted/40 w-36 sm:w-44 transition-all"
+                      />
                     </div>
                   </div>
 
@@ -793,6 +818,18 @@ export default function App() {
                         statusFilter === "All" || m.status === statusFilter,
                     )
                     .filter((m) => !showTodayOnly || isTodayArgentina(m.date))
+                    .filter((m) => {
+                      if (!teamSearch.trim()) return true;
+                      const searchLower = teamSearch.toLowerCase();
+                      const homeTeamName = TEAMS.find((t) => t.code === m.homeTeam)?.name.toLowerCase() || "";
+                      const awayTeamName = TEAMS.find((t) => t.code === m.awayTeam)?.name.toLowerCase() || "";
+                      return (
+                        homeTeamName.includes(searchLower) ||
+                        awayTeamName.includes(searchLower) ||
+                        m.homeTeam.toLowerCase().includes(searchLower) ||
+                        m.awayTeam.toLowerCase().includes(searchLower)
+                      );
+                    })
                     .map((match) => {
                       const homeTeam = TEAMS.find(
                         (t) => t.code === match.homeTeam,
@@ -1059,6 +1096,145 @@ export default function App() {
                         </div>
                       );
                     })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: RULES / REGLAMENTO */}
+            {activeTab === "rules" && (
+              <div className="space-y-6">
+                <div className={`${CARD_STYLE} relative overflow-hidden animate-fade-in`}>
+                  <div className="flex items-center gap-3 border-b border-border-color pb-4 mb-6">
+                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl text-indigo-500 dark:text-indigo-400">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-text-primary">
+                        Reglamento del Prode Mundial 2026
+                      </h3>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        Leé las reglas y entendé cómo funciona el sistema de puntos
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column: General Rules & Locking */}
+                    <div className="space-y-6">
+                      <div className="bg-slate-500/5 border border-border-color rounded-xl p-5">
+                        <h4 className="font-bold text-sm text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          ⏰ Carga de Pronósticos
+                        </h4>
+                        <ul className="space-y-3 text-xs text-text-secondary leading-relaxed">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-indigo-500 font-bold">•</span>
+                            <span>
+                              <strong>Límite de tiempo:</strong> Todos los pronósticos deben ser cargados y guardados <strong>antes del silbatazo inicial</strong> de cada partido.
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-indigo-500 font-bold">•</span>
+                            <span>
+                              <strong>Bloqueo automático:</strong> Una vez comenzado el partido (o al pasar la hora oficial), el sistema deshabilitará la tarjeta correspondiente del partido y ya no se podrán realizar ni modificar predicciones.
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-indigo-500 font-bold">•</span>
+                            <span>
+                              <strong>Guardado de datos:</strong> Asegurate de presionar el botón <strong>"Guardar"</strong> en cada partido para confirmar tus goles.
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-slate-500/5 border border-border-color rounded-xl p-5">
+                        <h4 className="font-bold text-sm text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          🏆 Reglas Básicas
+                        </h4>
+                        <ul className="space-y-3 text-xs text-text-secondary leading-relaxed">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-indigo-500 font-bold">•</span>
+                            <span>
+                              <strong>Transparencia:</strong> Todos los empleados participan bajo las mismas condiciones. Podés ver las predicciones de tus compañeros una vez que empiece el partido para garantizar juego limpio.
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-indigo-500 font-bold">•</span>
+                            <span>
+                              <strong>Soporte:</strong> En caso de problemas técnicos o si olvidaste tu contraseña, solicitá asistencia al administrador vía Discord.
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Scoring System */}
+                    <div className="bg-slate-500/5 border border-border-color rounded-xl p-5 space-y-4">
+                      <h4 className="font-bold text-sm text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        📊 Sistema de Puntajes
+                      </h4>
+                      <p className="text-xs text-text-secondary leading-relaxed">
+                        Los puntos se asignan al finalizar cada partido según el grado de acierto de tu pronóstico:
+                      </p>
+
+                      <div className="space-y-3 mt-3">
+                        {/* Exact match */}
+                        <div className="bg-white/5 dark:bg-slate-950/40 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-3">
+                          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                            +5 PTS
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-text-primary">Acierto Exacto</h5>
+                            <p className="text-[11px] text-text-muted mt-1 leading-normal">
+                              Le pegás al resultado exacto del partido. <br />
+                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 2 - 1 | Real: 2 - 1</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Goal difference */}
+                        <div className="bg-white/5 dark:bg-slate-950/40 border border-indigo-500/20 rounded-xl p-3.5 flex items-start gap-3">
+                          <div className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                            +3 PTS
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-text-primary">Diferencia de Goles</h5>
+                            <p className="text-[11px] text-text-muted mt-1 leading-normal">
+                              Acertás al ganador (o empate) y también la diferencia de goles, pero no el marcador exacto. <br />
+                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 3 - 1 (+2 dif) | Real: 2 - 0 (+2 dif)</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Winner/Draw Outcome */}
+                        <div className="bg-white/5 dark:bg-slate-950/40 border border-teal-500/20 rounded-xl p-3.5 flex items-start gap-3">
+                          <div className="bg-teal-500/10 border border-teal-500/30 text-teal-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                            +2 PTS
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-text-primary">Resultado / Ganador Únicamente</h5>
+                            <p className="text-[11px] text-text-muted mt-1 leading-normal">
+                              Acertás quién gana (o el empate) pero con otra cantidad de goles y diferente margen. <br />
+                              <span className="font-mono text-indigo-400/90">Ej: Pronóstico: 1 - 0 | Real: 3 - 1</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* No match */}
+                        <div className="bg-white/5 dark:bg-slate-950/40 border border-red-500/20 rounded-xl p-3.5 flex items-start gap-3">
+                          <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                            0 PTS
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-text-primary">Sin Aciertos</h5>
+                            <p className="text-[11px] text-text-muted mt-1 leading-normal">
+                              No le pegás al ganador ni al empate.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
