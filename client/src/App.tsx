@@ -787,7 +787,7 @@ export default function App() {
                                     onClick={() => savePrediction(match.id)}
                                     className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1 cursor-pointer"
                                   >
-                                    <Save className="w-3.5 h-3.5" /> Guardar
+                                    <Save className="w-3.5 h-3.5" /> {userPred ? 'Modificar' : 'Guardar'}
                                   </button>
                                 )
                               )}
