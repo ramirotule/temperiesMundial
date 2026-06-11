@@ -178,6 +178,9 @@ export default function App() {
 
   // Selected user for detailed predictions modal
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Custom error modal state
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
 
   // States for matching editing (Admin)
   const [adminEdits, setAdminEdits] = useState<Record<string, { homeScore: string; awayScore: string; status: Match['status'] }>>({});
@@ -249,7 +252,7 @@ export default function App() {
     const match = matches.find(m => m.id === matchId);
     if (match) {
       if (match.status !== 'scheduled' || new Date() >= new Date(match.date)) {
-        alert("No se permite guardar pronósticos una vez comenzado o finalizado el partido.");
+        setErrorModalMsg("No se permite guardar pronósticos una vez comenzado o finalizado el partido.");
         return;
       }
     }
@@ -261,7 +264,7 @@ export default function App() {
     const awayScore = parseInt(edit.awayScore);
 
     if (isNaN(homeScore) || homeScore < 0 || isNaN(awayScore) || awayScore < 0) {
-      alert("Por favor ingresá un resultado válido (goles válidos).");
+      setErrorModalMsg("Por favor ingresá un resultado válido (goles válidos).");
       return;
     }
 
@@ -273,7 +276,7 @@ export default function App() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Error al guardar el pronóstico.');
+        setErrorModalMsg(data.error || 'Error al guardar el pronóstico.');
         return;
       }
 
@@ -299,7 +302,7 @@ export default function App() {
         return copy;
       });
     } catch (error) {
-      alert('Error de conexión al guardar pronóstico.');
+      setErrorModalMsg('Error de conexión al guardar pronóstico.');
     }
   };
 
@@ -312,7 +315,7 @@ export default function App() {
     const awayScore = edit.awayScore === "" ? null : parseInt(edit.awayScore);
 
     if (edit.status === 'finished' && (homeScore === null || awayScore === null)) {
-      alert("Para finalizar el partido, debés cargar un resultado real.");
+      setErrorModalMsg("Para finalizar el partido, debés cargar un resultado real.");
       return;
     }
 
@@ -324,7 +327,7 @@ export default function App() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Error al guardar resultado del partido.');
+        setErrorModalMsg(data.error || 'Error al guardar resultado del partido.');
         return;
       }
 
@@ -343,7 +346,7 @@ export default function App() {
         return copy;
       });
     } catch (error) {
-      alert('Error de conexión al guardar resultado.');
+      setErrorModalMsg('Error de conexión al guardar resultado.');
     }
   };
 
@@ -1130,6 +1133,25 @@ export default function App() {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Error Modal */}
+      {errorModalMsg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-bg-card border border-border-color rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-red-500/10 border border-red-500/30 text-red-500 rounded-full flex items-center justify-center text-xl mb-4 animate-bounce">
+              ⚠️
+            </div>
+            <h3 className="font-extrabold text-lg text-text-primary mb-2">Atención</h3>
+            <p className="text-text-secondary text-sm mb-6">{errorModalMsg}</p>
+            <button 
+              onClick={() => setErrorModalMsg(null)}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-md shadow-indigo-600/20 hover:shadow-indigo-500/30 cursor-pointer text-sm"
+            >
+              Aceptar
+            </button>
           </div>
         </div>
       )}
