@@ -118,19 +118,13 @@ export function generateMatches(): Match[] {
       
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
       
-      let offset = -5; // Default (CDT)
-      if (stadium.includes('Azteca') || stadium.includes('BBVA') || stadium.includes('Akron')) {
-        offset = -6; // CST (Mexico City, Monterrey, Guadalajara)
-      } else if (stadium.includes('MetLife') || stadium.includes('Mercedes-Benz') || stadium.includes('Hard Rock') || stadium.includes('BMO Field') || stadium.includes('Toronto')) {
-        offset = -4; // EDT (NY, Atlanta, Miami, Toronto)
-      } else if (stadium.includes('SoFi') || stadium.includes('Lumen') || stadium.includes('Levi') || stadium.includes('Vancouver') || stadium.includes('BC Place')) {
-        offset = -7; // PDT (LA, Seattle, San Francisco, Vancouver)
-      }
-      
-      const localHours = [13, 16, 18, 20];
+      // Kickoff hours directly in Argentina Time (ART) as per TN schedule
+      const timesART = [16, 23, 19, 13];
       const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
-      const localHour = localHours[timeSlot];
-      const hourUTC = localHour - offset;
+      const hourART = timesART[timeSlot];
+      
+      // Since Argentina is UTC-3, we do UTC = hourART + 3
+      const hourUTC = hourART + 3;
       const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
       
       // Let's set some match statuses:
