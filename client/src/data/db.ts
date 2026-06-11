@@ -174,28 +174,29 @@ function hashString(str: string): number {
   return hash;
 }
 
-// 40 mock employee names
+// Real employee names
 export const EMPLOYEES = [
-  'Ramiro Tule', 'Santiago Pérez', 'Florencia Díaz', 'Mateo Rossi', 'Lucrecia Fernández',
-  'Nicolás Gómez', 'Bautista Rodríguez', 'Valentina López', 'Juana González', 'Benjamín Martínez',
-  'Delfina Álvarez', 'Tomás Romero', 'Catalina Herrera', 'Felipe Castro', 'Olivia Giménez',
-  'Joaquín Silva', 'Emma Medina', 'Agustín Vera', 'Zoe Suárez', 'Ignacio Alarcón',
-  'Margarita Peralta', 'Manuel Vidal', 'Milagros Pereyra', 'Francisco Ledesma', 'Lola Ortiz',
-  'Juan Cruz Molina', 'Sofia Torres', 'Bruno Solís', 'Martina Vega', 'Juan Manuel Carrizo',
-  'Victoria Luna', 'Thiago Campos', 'Guillermina Ríos', 'Facundo Morales', 'Morena Ibáñez',
-  'Santino Acosta', 'Alma Ferreira', 'León Roldán', 'Mia Domínguez', 'Lorenzo Quiroga'
+  'Eduardo Rodriguez', 'Gabriel Vergara', 'Matias Mercado', 'Alejandro Riccillo', 'Claudio Mazolli',
+  'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
+  'Rocio Smidt', 'Alejandro Morreale', 'Daiana', 'Leandro Saraceno', 'Franco Flores',
+  'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
+  'Nacho', 'Conrado Blanco'
 ];
 
 export const MOCK_USERS: User[] = [
   { id: 'admin', username: 'admin', name: 'Administrador', role: 'admin', avatarSeed: 'admin', password: 'admin' },
-  ...EMPLOYEES.map((name, idx) => ({
-    id: `emp-${idx + 1}`,
-    username: name.toLowerCase().replace(/\s+/g, '.'),
-    name,
-    role: 'user' as const,
-    avatarSeed: `emp-${idx + 1}`,
-    password: '1234'
-  }))
+  ...EMPLOYEES.map((name, idx) => {
+    const firstName = name.split(' ')[0];
+    const password = `${firstName}2026`;
+    return {
+      id: `emp-${idx + 1}`,
+      username: name.toLowerCase().replace(/\s+/g, '.'),
+      name,
+      role: 'user' as const,
+      avatarSeed: `emp-${idx + 1}`,
+      password
+    };
+  })
 ];
 
 // Helper to pre-populate mock predictions so the scoreboard isn't empty
