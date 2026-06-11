@@ -730,9 +730,16 @@ export default function App() {
                           {/* Save & Prediction Status Bar */}
                           <div className="mt-4 pt-3 border-t border-border-color flex flex-col gap-2">
                             {/* Date/Time and Stadium info */}
-                            <div className="text-[10px] text-text-muted font-medium flex items-center justify-between">
-                              <span>{new Date(match.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}hs</span>
-                              <span className="truncate max-w-[150px]">{match.stadium}</span>
+                            <div className="text-xs text-text-muted font-medium flex items-start justify-between gap-2">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-bold text-text-secondary text-xs sm:text-sm">
+                                  🇦🇷 {new Date(match.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} hs
+                                </span>
+                                <span className="text-[10px] sm:text-xs text-text-muted">
+                                  🇪🇸 {new Date(match.date).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} hs
+                                </span>
+                              </div>
+                              <span className="truncate max-w-[120px] text-[10px] sm:text-xs self-start text-right">{match.stadium}</span>
                             </div>
 
                             {/* Prediction status / Save Action */}
