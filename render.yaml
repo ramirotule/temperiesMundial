@@ -1,23 +1,23 @@
 services:
   # 1. Backend API (Node.js + Express + Prisma)
   - type: web
-    name: prode-backend
+    name: temperies-mundial-backend
     env: node
-    plan: starter # Render free database requires starter or web services can link to databases
+    plan: free
     rootDir: server
     buildCommand: npm install && npx prisma generate
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: prode-db
+          name: temperies-mundial-db
           property: connectionString
       - key: PORT
         value: 3001
 
   # 2. Frontend React (Vite + Tailwind CSS v4)
   - type: web
-    name: prode-frontend
+    name: temperies-mundial-frontend
     runtime: static
     rootDir: client
     buildCommand: npm install && npm run build
@@ -28,6 +28,6 @@ services:
 
 databases:
   # 3. PostgreSQL Database
-  - name: prode-db
+  - name: temperies-mundial-db
     plan: free
     postgresMajorVersion: 15
