@@ -109,11 +109,11 @@ export function generateMatches(): Match[] {
       // Round 3: Days 10-14 (June 21 - June 25)
       let dayOffset = 0;
       if (pair.round === 1) {
-        dayOffset = Math.floor((groups.indexOf(groupChar) * 2 + idx) / 5);
+        dayOffset = groups.indexOf(groupChar);
       } else if (pair.round === 2) {
-        dayOffset = 5 + Math.floor((groups.indexOf(groupChar) * 2 + idx) / 5);
+        dayOffset = 12 + groups.indexOf(groupChar);
       } else {
-        dayOffset = 10 + Math.floor((groups.indexOf(groupChar) * 2 + idx) / 5);
+        dayOffset = 24 + groups.indexOf(groupChar);
       }
       
       const timesART = [16, 19, 22, 13];

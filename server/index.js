@@ -120,7 +120,10 @@ app.get('/api/predictions', async (req, res) => {
 app.post('/api/predictions', async (req, res) => {
   const { userId, matchId, homeScore, awayScore } = req.body;
 
-  if (isNaN(homeScore) || homeScore < 0 || isNaN(awayScore) || awayScore < 0) {
+  const hScore = parseInt(homeScore, 10);
+  const aScore = parseInt(awayScore, 10);
+
+  if (isNaN(hScore) || hScore < 0 || isNaN(aScore) || aScore < 0) {
     return res.status(400).json({ error: 'Goles no válidos.' });
   }
 
@@ -136,15 +139,15 @@ app.post('/api/predictions', async (req, res) => {
         userId_matchId: { userId, matchId }
       },
       update: {
-        homeScore,
-        awayScore,
+        homeScore: hScore,
+        awayScore: aScore,
         createdAt: new Date()
       },
       create: {
         userId,
         matchId,
-        homeScore,
-        awayScore
+        homeScore: hScore,
+        awayScore: aScore
       }
     });
 
