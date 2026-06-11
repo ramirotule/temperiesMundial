@@ -155,6 +155,23 @@ export default function App() {
   // Filters for matches
   const [groupFilter, setGroupFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [showTodayOnly, setShowTodayOnly] = useState<boolean>(false);
+
+  const isTodayArgentina = (dateStr: string) => {
+    try {
+      const matchDate = new Date(dateStr);
+      const today = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      });
+      return formatter.format(matchDate) === formatter.format(today);
+    } catch (e) {
+      return false;
+    }
+  };
 
   // Search filter for leaderboard
   const [searchQuery, setSearchQuery] = useState('');
@@ -521,34 +538,47 @@ export default function App() {
             {activeTab === 'matches' && (
               <div className="space-y-6">
                 {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3 bg-bg-card border border-border-color rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Grupo:</span>
-                    <select 
-                      className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
-                      value={groupFilter}
-                      onChange={(e) => setGroupFilter(e.target.value)}
-                    >
-                      <option value="All">Todos los Grupos</option>
-                      {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
-                        <option key={g} value={g}>Grupo {g}</option>
-                      ))}
-                    </select>
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-bg-card border border-border-color rounded-2xl p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Grupo:</span>
+                      <select 
+                        className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
+                        value={groupFilter}
+                        onChange={(e) => setGroupFilter(e.target.value)}
+                      >
+                        <option value="All">Todos los Grupos</option>
+                        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
+                          <option key={g} value={g}>Grupo {g}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Estado:</span>
+                      <select 
+                        className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                      >
+                        <option value="All">Todos</option>
+                        <option value="scheduled">Pendientes</option>
+                        <option value="live">En Vivo</option>
+                        <option value="finished">Finalizados</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Estado:</span>
-                    <select 
-                      className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="All">Todos</option>
-                      <option value="scheduled">Pendientes</option>
-                      <option value="live">En Vivo</option>
-                      <option value="finished">Finalizados</option>
-                    </select>
-                  </div>
+                  <button
+                    onClick={() => setShowTodayOnly(prev => !prev)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
+                      showTodayOnly 
+                        ? 'bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5' 
+                        : 'bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    📅 Partidos de Hoy
+                  </button>
                 </div>
 
                 {/* Matches Grid */}
@@ -556,6 +586,7 @@ export default function App() {
                   {matches
                     .filter(m => groupFilter === 'All' || m.group === groupFilter)
                     .filter(m => statusFilter === 'All' || m.status === statusFilter)
+                    .filter(m => !showTodayOnly || isTodayArgentina(m.date))
                     .map(match => {
                       const homeTeam = TEAMS.find(t => t.code === match.homeTeam);
                       const awayTeam = TEAMS.find(t => t.code === match.awayTeam);
@@ -573,7 +604,7 @@ export default function App() {
                       const pointsEarned = match.status === 'finished' ? calculatePoints(match, userPred) : null;
 
                       return (
-                        <div key={match.id} className={`${CARD_STYLE} relative flex flex-col justify-between overflow-hidden group hover:border-indigo-500/40 transition-all duration-300`}>
+                        <div key={match.id} className={`${CARD_STYLE} relative flex flex-col justify-between overflow-hidden group hover:border-indigo-500/40 transition-all duration-300 ${!isMatchLocked && !userPred ? '!border-rose-500/40 dark:!border-rose-500/30 ring-1 ring-rose-500/10 shadow-rose-500/5 shadow-md' : ''}`}>
                           
                           {/* Top Status Indicators */}
                           <div className="flex items-center justify-between mb-4">
@@ -705,6 +736,10 @@ export default function App() {
                                 {userPred ? (
                                   <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                     Predijo: {userPred.homeScore} - {userPred.awayScore}
+                                  </span>
+                                ) : !isMatchLocked ? (
+                                  <span className="text-xs font-black text-rose-500 dark:text-rose-400 flex items-center gap-1 animate-pulse">
+                                    ⚠️ Falta Pronosticar
                                   </span>
                                 ) : (
                                   <span className="text-xs text-text-muted italic">Sin Pronosticar</span>
