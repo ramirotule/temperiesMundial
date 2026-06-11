@@ -112,6 +112,7 @@ export default function App() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
+  const [showLoginForm, setShowLoginForm] = useState<boolean>(false);
 
   // Fetch initial data from Express server API
   useEffect(() => {
@@ -409,46 +410,77 @@ export default function App() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200"
-      style={!currentUser ? {
-        backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(/login.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-      } : undefined}
+      style={
+        !currentUser
+          ? showLoginForm
+            ? {
+                backgroundImage:
+                  "linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.45)), url(/login.png)",
+                backgroundSize: "contain",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "#030612",
+                backgroundAttachment: "fixed",
+              }
+            : { backgroundColor: "#030612" }
+          : undefined
+      }
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200">
+      <header 
+        className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200"
+        style={!currentUser ? { backgroundColor: '#090E1D', borderColor: 'rgba(30, 41, 59, 0.4)' } : undefined}
+      >
         <div className="flex items-center gap-3">
-          {darkMode ? (
-            <img src="/logo-dark.png" alt="Temperies Prode Mundial 2026" className="h-14 sm:h-18 w-auto object-contain" />
-          ) : (
-            <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-14 sm:h-18">
-              <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-12 sm:h-16 w-auto object-contain" />
+          {currentUser && (
+            <div
+              onClick={!currentUser ? () => setShowLoginForm(prev => !prev) : undefined}
+              className={!currentUser ? "cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200" : ""}
+              title={!currentUser ? "Hacé click para ingresar" : undefined}
+            >
+              {darkMode ? (
+                <img
+                  src="/logo-dark.png"
+                  alt="Temperies Prode Mundial 2026"
+                  className="h-14 sm:h-18 w-auto object-contain"
+                />
+              ) : (
+                <div className="bg-white px-2 py-1 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center h-14 sm:h-18">
+                  <img
+                    src="/logo.png"
+                    alt="Temperies Prode Mundial 2026"
+                    className="h-12 sm:h-16 w-auto object-contain"
+                  />
+                </div>
+              )}
             </div>
           )}
-          <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
-            <span>🇦🇷</span>
-            <span>¡Vamos Argentina!</span>
-            <span>🇦🇷</span>
-          </div>
+          {currentUser && (
+            <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
+              <span>🇦🇷</span>
+              <span>¡Vamos Argentina!</span>
+              <span>🇦🇷</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Light/Dark Toggle */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 border border-border-color rounded-xl text-text-secondary transition-colors cursor-pointer"
-            title={darkMode ? "Modo Claro" : "Modo Oscuro"}
-          >
-            {darkMode ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-400" />
-            )}
-          </button>
+          {currentUser && (
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 border border-border-color rounded-xl text-text-secondary transition-colors cursor-pointer"
+              title={darkMode ? "Modo Claro" : "Modo Oscuro"}
+            >
+              {darkMode ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-400" />
+              )}
+            </button>
+          )}
 
           {currentUser && (
             <>
@@ -483,86 +515,109 @@ export default function App() {
       </header>
 
       {/* Main Body */}
-      <main className={`max-w-7xl mx-auto w-full px-4 sm:px-6 mt-8 flex-1 ${!currentUser ? 'flex items-center justify-center min-h-[calc(100vh-160px)]' : ''}`}>
+      <main
+        className={`max-w-7xl mx-auto w-full px-4 sm:px-6 mt-8 flex-1 ${!currentUser && showLoginForm ? "flex items-center justify-center min-h-[calc(100vh-160px)]" : ""}`}
+      >
         {!currentUser ? (
-          /* Login Screen */
-          <div className="max-w-md w-full mx-auto my-auto">
-            <div
-              className={`${CARD_STYLE} border-indigo-500/20 shadow-indigo-500/10`}
-            >
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 border border-border-color rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4">
-                  <span className="text-3xl">🇦🇷</span>
-                </div>
-                <h2 className="text-2xl font-black tracking-tight text-text-primary">
-                  Ingresá a tu Prode
-                </h2>
-                <p className="text-text-muted text-sm mt-1">
-                  Ingresá tus credenciales para acceder
-                </p>
-              </div>
-
-              <form onSubmit={handleLoginSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
-                    Usuario / Empleado
-                  </label>
-                  <select
-                    className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-indigo-500 transition-colors"
-                    value={selectedUserId}
-                    onChange={(e) => {
-                      setSelectedUserId(e.target.value);
-                      setLoginError("");
-                    }}
-                  >
-                    <option value="" disabled>
-                      Seleccioná tu nombre...
-                    </option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} {user.role === "admin" ? "(Admin)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
-                    Contraseña
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={passwordInput}
-                    onChange={(e) => {
-                      setPasswordInput(e.target.value);
-                      setLoginError("");
-                    }}
-                    className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-indigo-500 transition-colors text-sm"
-                  />
-                </div>
-
-                {loginError && (
-                  <div className="p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-xs font-semibold flex items-center gap-2">
-                    <span>⚠️</span> {loginError}
+          showLoginForm ? (
+            /* Login Screen */
+            <div className="max-w-md w-full mx-auto my-auto animate-fade-in">
+              <div
+                className={`${CARD_STYLE} border-indigo-500/20 shadow-indigo-500/10`}
+              >
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 border border-border-color rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4">
+                    <span className="text-3xl">🇦🇷</span>
                   </div>
-                )}
+                  <h2 className="text-2xl font-black tracking-tight text-text-primary">
+                    Ingresá a tu Prode
+                  </h2>
+                  <p className="text-text-muted text-sm mt-1">
+                    Ingresá tus credenciales para acceder
+                  </p>
+                </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 cursor-pointer text-sm"
-                >
-                  Ingresar
-                </button>
-              </form>
+                <form onSubmit={handleLoginSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
+                      Usuario / Empleado
+                    </label>
+                    <select
+                      className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-indigo-500 transition-colors"
+                      value={selectedUserId}
+                      onChange={(e) => {
+                        setSelectedUserId(e.target.value);
+                        setLoginError("");
+                      }}
+                    >
+                      <option value="" disabled>
+                        Seleccioná tu nombre...
+                      </option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} {user.role === "admin" ? "(Admin)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="mt-6 text-center">
-                <p className="text-[10px] text-text-muted font-mono mt-1">
-                  SOLICITAR contraseña por discord a Ramiro Toulemonde:{" "}
-                </p>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
+                      Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordInput}
+                      onChange={(e) => {
+                        setPasswordInput(e.target.value);
+                        setLoginError("");
+                      }}
+                      className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-indigo-500 transition-colors text-sm"
+                    />
+                  </div>
+
+                  {loginError && (
+                    <div className="p-3 bg-red-500/15 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-xs font-semibold flex items-center gap-2">
+                      <span>⚠️</span> {loginError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 cursor-pointer text-sm"
+                  >
+                    Ingresar
+                  </button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <p className="text-[10px] text-text-muted font-mono mt-1">
+                    SOLICITAR contraseña por discord a Ramiro Toulemonde{" "}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 w-full">
+              <div
+                className="relative aspect-square w-full max-w-[min(90vw,70vh)] mx-auto mt-4 bg-cover bg-center bg-no-repeat shadow-2xl rounded-2xl animate-fade-in"
+                style={{ backgroundImage: "url(/login.png)" }}
+              >
+                {/* Clickable zone for the eye logo mark at the top center of the background image */}
+                <button
+                  onClick={() => setShowLoginForm(true)}
+                  className="absolute top-[2%] left-[32%] w-[36%] h-[20%] rounded-full cursor-pointer hover:bg-white/5 active:scale-95 transition-all duration-300 border border-transparent hover:border-white/10 flex items-center justify-center"
+                  title="Hacé click en el logo para ingresar"
+                >
+                  <span className="sr-only">Ingresar</span>
+                </button>
+              </div>
+              <p className="text-xs font-semibold tracking-wider text-slate-300/80 select-none animate-pulse text-center max-w-xs mt-2 bg-slate-950/70 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm shadow-xl">
+                💡 Tip: Pasá el mouse por el logo de Temperies para ingresar
+              </p>
+            </div>
+          )
         ) : (
           /* Dashboard Dashboard */
           <div className="space-y-6">
