@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #f8fafc; /* slate-50 */
+  --bg-card: rgba(255, 255, 255, 0.75);
+  --border-color: rgba(226, 232, 240, 0.8); /* slate-200 */
+  --text-primary: #0f172a; /* slate-900 */
+  --text-secondary: #334155; /* slate-700 */
+  --text-muted: #64748b; /* slate-500 */
+  --bg-input: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.85);
+  --border-header: #e2e8f0;
+}
+
+.dark {
+  --bg-primary: #020617; /* slate-950 */
+  --bg-card: rgba(15, 23, 42, 0.6); /* slate-900/60 */
+  --border-color: rgba(30, 41, 59, 0.8); /* slate-800/80 */
+  --text-primary: #f1f5f9; /* slate-100 */
+  --text-secondary: #e2e8f0; /* slate-200 */
+  --text-muted: #94a3b8; /* slate-400 */
+  --bg-input: rgba(2, 6, 23, 0.8); /* slate-950/80 */
+  --bg-header: rgba(2, 6, 23, 0.8);
+  --border-header: #0f172a;
+}
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-card: var(--bg-card);
+  --color-border-color: var(--border-color);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-bg-input: var(--bg-input);
+  --color-bg-header: var(--bg-header);
+  --color-border-header: var(--border-header);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    @apply font-sans antialiased transition-colors duration-200 selection:bg-indigo-500 selection:text-white;
+  }
+}
