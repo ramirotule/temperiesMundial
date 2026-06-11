@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
-  Trophy, 
   Calendar, 
   Users, 
   Settings, 
@@ -326,20 +325,7 @@ export default function App() {
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-tr from-amber-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
-            <Trophy className="w-5 h-5 text-white animate-pulse" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black bg-gradient-to-r from-amber-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
-              PRODE MUNDIAL 2026
-            </h1>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-0.5">
-              <span className="text-xs text-text-muted">Corporate Cup Tournament</span>
-              <span className="text-[10px] bg-sky-500/20 border border-sky-400/30 text-sky-500 dark:text-sky-300 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 self-start w-fit">
-                🇦🇷 ¡VAMOS ARGENTINA! ⚽
-              </span>
-            </div>
-          </div>
+          <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-10 sm:h-12 w-auto object-contain" />
         </div>
 
         <div className="flex items-center gap-3">
@@ -702,10 +688,10 @@ export default function App() {
                             <div className="text-xs text-text-muted font-medium flex items-start justify-between gap-2">
                               <div className="flex flex-col gap-1">
                                 <span className="font-bold text-text-secondary text-xs sm:text-sm">
-                                  🇦🇷 {new Date(match.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} hs
+                                  🇦🇷 {new Date(match.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
                                 </span>
                                 <span className="text-[10px] sm:text-xs text-text-muted">
-                                  🇪🇸 {new Date(match.date).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} hs
+                                  🇪🇸 {new Date(match.date).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
                                 </span>
                               </div>
                               <span className="truncate max-w-[120px] text-[10px] sm:text-xs self-start text-right">{match.stadium}</span>

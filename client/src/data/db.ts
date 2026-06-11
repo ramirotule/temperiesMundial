@@ -116,13 +116,11 @@ export function generateMatches(): Match[] {
         dayOffset = 10 + Math.floor((groups.indexOf(groupChar) * 2 + idx) / 5);
       }
       
-      const matchDate = new Date('2026-06-11T13:00:00');
-      matchDate.setDate(matchDate.getDate() + dayOffset);
-      
-      // Assign times: 13:00, 16:00, 19:00, 22:00
-      const times = [13, 16, 19, 22];
+      const timesART = [16, 19, 22, 13];
       const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
-      matchDate.setHours(times[timeSlot], 0, 0);
+      const hourART = timesART[timeSlot];
+      const hourUTC = hourART + 3;
+      const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
 
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
       
