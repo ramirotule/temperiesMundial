@@ -243,6 +243,15 @@ export default function App() {
   // Handle saving user prediction
   const savePrediction = async (matchId: string) => {
     if (!currentUser) return;
+
+    const match = matches.find(m => m.id === matchId);
+    if (match) {
+      if (match.status !== 'scheduled' || new Date() >= new Date(match.date)) {
+        alert("No se permite guardar pronósticos una vez comenzado o finalizado el partido.");
+        return;
+      }
+    }
+
     const edit = predEdits[matchId];
     if (!edit) return;
 
@@ -598,7 +607,7 @@ export default function App() {
                         awayScore: userPred ? userPred.awayScore.toString() : ''
                       };
 
-                      const isMatchLocked = match.status === 'finished' || match.status === 'live';
+                      const isMatchLocked = match.status === 'finished' || match.status === 'live' || new Date() >= new Date(match.date);
                       
                       // Calculate potential/earned points for this match card
                       const pointsEarned = match.status === 'finished' ? calculatePoints(match, userPred) : null;

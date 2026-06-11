@@ -128,10 +128,17 @@ app.post('/api/predictions', async (req, res) => {
   }
 
   try {
-    // Verify match status first (cannot predict started matches)
+    // Verify match status first (cannot predict started matches or past kick-off time)
     const match = await prisma.match.findUnique({ where: { id: matchId } });
-    if (!match || match.status !== 'scheduled') {
-      return res.status(400).json({ error: 'El partido ya comenzó o finalizó.' });
+    if (!match) {
+      return res.status(404).json({ error: 'Partido no encontrado.' });
+    }
+
+    const now = new Date();
+    const matchDate = new Date(match.date);
+
+    if (match.status !== 'scheduled' || now >= matchDate) {
+      return res.status(400).json({ error: 'No se permite guardar resultados una vez comenzado o finalizado el partido.' });
     }
 
     const prediction = await prisma.prediction.upsert({
