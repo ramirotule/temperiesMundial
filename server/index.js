@@ -160,7 +160,8 @@ app.post('/api/predictions', async (req, res) => {
 
     res.json(prediction);
   } catch (error) {
-    res.status(500).json({ error: 'Error al guardar pronóstico.' });
+    console.error("Error saving prediction:", error);
+    res.status(500).json({ error: 'Error al guardar pronóstico.', details: error.message });
   }
 });
 

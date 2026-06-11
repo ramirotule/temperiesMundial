@@ -350,8 +350,13 @@ export default function App() {
     <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200">
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-bg-header backdrop-blur-md border-b border-border-header px-6 py-4 flex items-center justify-between transition-colors duration-200">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-10 sm:h-12 w-auto object-contain" />
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Temperies Prode Mundial 2026" className="h-14 sm:h-20 w-auto object-contain" />
+          <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
+            <span>🇦🇷</span>
+            <span>¡Vamos Argentina!</span>
+            <span>🇦🇷</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
