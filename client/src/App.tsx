@@ -385,6 +385,14 @@ export default function App() {
               else if (res.type === "diff") diffMatches++;
               else if (res.type === "outcome") outcomeMatches++;
             }
+          } else {
+            // Penalty of -1 if the match is finished and starts from tomorrow (June 12, 2026 ART onwards)
+            if (
+              match.status === "finished" &&
+              new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00")
+            ) {
+              points -= 1;
+            }
           }
         });
 
@@ -1028,7 +1036,9 @@ export default function App() {
                       // Calculate potential/earned points for this match card
                       const pointsEarned =
                         match.status === "finished"
-                          ? calculatePoints(match, userPred)
+                          ? userPred
+                            ? calculatePoints(match, userPred)
+                            : { points: new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00") ? -1 : 0, type: "none" as const }
                           : null;
 
                       return (
@@ -1242,11 +1252,15 @@ export default function App() {
                                             ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
                                             : pointsEarned.points === 2
                                               ? "bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-400"
-                                              : "bg-slate-100 dark:bg-slate-900 border-border-color text-text-muted"
+                                              : pointsEarned.points === -1
+                                                ? "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                                                : "bg-slate-100 dark:bg-slate-900 border-border-color text-text-muted"
                                       }`}
                                     >
                                       {pointsEarned.points > 0 ? (
                                         <>🎉 +{pointsEarned.points} pts</>
+                                      ) : pointsEarned.points === -1 ? (
+                                        <>⚠️ -1 pt (No pronosticado)</>
                                       ) : (
                                         <>❌ 0 pts</>
                                       )}
@@ -1958,7 +1972,9 @@ export default function App() {
 
                   const pointsEarned =
                     match.status === "finished"
-                      ? calculatePoints(match, userPred)
+                      ? userPred
+                        ? calculatePoints(match, userPred)
+                        : { points: new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00") ? -1 : 0, type: "none" as const }
                       : null;
 
                   return (
@@ -2026,12 +2042,16 @@ export default function App() {
                                     ? "bg-indigo-500/15 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400"
                                     : pointsEarned.points === 2
                                       ? "bg-teal-500/15 border border-teal-500/20 text-teal-600 dark:text-teal-400"
-                                      : "bg-slate-100 dark:bg-slate-900 text-text-muted border border-border-color"
+                                      : pointsEarned.points === -1
+                                        ? "bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400"
+                                        : "bg-slate-100 dark:bg-slate-900 text-text-muted border border-border-color"
                               }`}
                             >
                               {pointsEarned.points > 0
                                 ? `+${pointsEarned.points} pts`
-                                : "0 pts"}
+                                : pointsEarned.points === -1
+                                  ? "-1 pt"
+                                  : "0 pts"}
                             </span>
                           ) : (
                             <span className="text-[10px] text-text-muted italic">
