@@ -181,7 +181,7 @@ async function main() {
 
   // 1. Seed Users
   const usersToCreate = [
-    { username: 'admin', name: 'Administrador', role: 'admin', avatarSeed: 'admin', password: 'admin' },
+    { username: 'admin', name: 'Administrador', role: 'admin', avatarSeed: 'admin', password: 'adminmundial2026' },
     ...EMPLOYEES.map((name, idx) => {
       const password = PASSWORD_MAP[name] || '1234';
       return {
