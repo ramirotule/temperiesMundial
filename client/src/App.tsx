@@ -721,17 +721,12 @@ export default function App() {
         <div className="flex items-center gap-3">
           {currentUser && (
             <div
-              onClick={
-                !currentUser
-                  ? () => setShowLoginForm((prev) => !prev)
-                  : undefined
-              }
-              className={
-                !currentUser
-                  ? "cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200"
-                  : ""
-              }
-              title={!currentUser ? "Hacé click para ingresar" : undefined}
+              onClick={() => {
+                setActiveTab("matches");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="cursor-pointer hover:scale-105 active:scale-95 transition-transform duration-200"
+              title="Ir a Partidos y subir"
             >
               {darkMode ? (
                 <img
@@ -1628,7 +1623,7 @@ export default function App() {
                       <div className="space-y-3 mt-3">
                         {/* Exact match */}
                         <div className="bg-white/5 dark:bg-slate-950/40 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-3">
-                          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-black px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
                             +5 PTS
                           </div>
                           <div>
@@ -1646,7 +1641,7 @@ export default function App() {
 
                         {/* Goal difference */}
                         <div className="bg-white/5 dark:bg-slate-950/40 border border-indigo-500/20 rounded-xl p-3.5 flex items-start gap-3">
-                          <div className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                          <div className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 text-xs font-black px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
                             +3 PTS
                           </div>
                           <div>
@@ -1667,7 +1662,7 @@ export default function App() {
 
                         {/* Winner/Draw Outcome */}
                         <div className="bg-white/5 dark:bg-slate-950/40 border border-teal-500/20 rounded-xl p-3.5 flex items-start gap-3">
-                          <div className="bg-teal-500/10 border border-teal-500/30 text-teal-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                          <div className="bg-teal-500/10 border border-teal-500/30 text-teal-500 text-xs font-black px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
                             +2 PTS
                           </div>
                           <div>
@@ -1686,7 +1681,7 @@ export default function App() {
 
                         {/* No match */}
                         <div className="bg-white/5 dark:bg-slate-950/40 border border-red-500/20 rounded-xl p-3.5 flex items-start gap-3">
-                          <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-black px-2.5 py-1 rounded-lg">
+                          <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-black px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
                             0 PTS
                           </div>
                           <div>
@@ -1701,7 +1696,7 @@ export default function App() {
 
                         {/* Penalty for missing prediction */}
                         <div className="bg-red-500/10 dark:bg-red-950/20 border border-red-500/35 rounded-xl p-3.5 flex items-start gap-3 animate-pulse">
-                          <div className="bg-red-500/20 border border-red-500/40 text-red-600 dark:text-red-400 text-xs font-black px-2.5 py-1 rounded-lg">
+                          <div className="bg-red-500/20 border border-red-500/40 text-red-600 dark:text-red-400 text-xs font-black px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
                             -1 PT
                           </div>
                           <div>
