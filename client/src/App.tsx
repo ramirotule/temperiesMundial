@@ -241,6 +241,50 @@ function mapMatchStatus(match: Match): Match {
   return { ...match, status };
 }
 
+const playTrumpetSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // Stadium horn chant: G4, C5, E5, G5, E5, G5
+    const notes = [392.00, 523.25, 659.25, 783.99, 659.25, 783.99];
+    const rhythm = [0, 0.12, 0.24, 0.36, 0.48, 0.60];
+    const durations = [0.10, 0.10, 0.10, 0.10, 0.10, 0.40];
+    
+    notes.forEach((freq, idx) => {
+      const startTime = ctx.currentTime + rhythm[idx];
+      const duration = durations[idx];
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc.detune.setValueAtTime(8, startTime);
+      
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1200, startTime);
+      filter.frequency.exponentialRampToValueAtTime(3500, startTime + 0.05);
+      filter.frequency.exponentialRampToValueAtTime(1000, startTime + duration);
+      
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.18, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  } catch (e) {
+    console.error("Audio error", e);
+  }
+};
+
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("prode_theme");
@@ -941,7 +985,10 @@ export default function App() {
                 {/* Clickable zone for the eye logo mark at the top center of the background image */}
                 <button
                   onClick={() => setShowLoginForm(true)}
-                  onMouseEnter={() => setIsHoveringLoginLogo(true)}
+                  onMouseEnter={() => {
+                    setIsHoveringLoginLogo(true);
+                    playTrumpetSound();
+                  }}
                   onMouseLeave={() => setIsHoveringLoginLogo(false)}
                   className="absolute top-[2%] left-[32%] w-[36%] h-[20%] rounded-full cursor-pointer transition-all duration-300 border border-transparent flex items-center justify-center arg-heartbeat-hover active:scale-95"
                   title="Hacé click en el logo para ingresar"
@@ -953,28 +1000,50 @@ export default function App() {
                 💡 Tip: Pasá el mouse por el logo de Temperies para ingresar
               </p>
 
-              {/* Falling confetti */}
+              {/* Falling confetti and idols overlay */}
               {isHoveringLoginLogo && (
-                <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-                  {confettiParticles.map((p) => (
-                    <div
-                      key={p.id}
-                      className="absolute top-0 animate-confetti-fall"
-                      style={{
-                        left: `${p.left}%`,
-                        width: `${p.size}px`,
-                        height: `${p.size * 1.5}px`,
-                        backgroundColor: p.color,
-                        animationDelay: `${p.delay}s`,
-                        animationDuration: `${p.duration}s`,
-                        transform: `rotate(${p.rotation}deg)`,
-                        opacity: 0.8,
-                        borderRadius: "2px",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
-                      }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                    {confettiParticles.map((p) => (
+                      <div
+                        key={p.id}
+                        className="absolute top-0 animate-confetti-fall"
+                        style={{
+                          left: `${p.left}%`,
+                          width: `${p.size}px`,
+                          height: `${p.size * 1.5}px`,
+                          backgroundColor: p.color,
+                          animationDelay: `${p.delay}s`,
+                          animationDuration: `${p.duration}s`,
+                          transform: `rotate(${p.rotation}deg)`,
+                          opacity: 0.8,
+                          borderRadius: "2px",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Maradona (Left) and Messi (Right) Idols */}
+                  <img
+                    src="/maradona.png"
+                    alt="Diego Maradona"
+                    className="fixed bottom-0 left-0 h-[280px] sm:h-[450px] md:h-[550px] w-auto object-contain pointer-events-none z-40 animate-slide-left-idol"
+                  />
+                  <img
+                    src="/messi.png"
+                    alt="Lionel Messi"
+                    className="fixed bottom-0 right-0 h-[280px] sm:h-[450px] md:h-[550px] w-auto object-contain pointer-events-none z-40 animate-slide-right-idol"
+                  />
+
+                  {/* Pulsing Argentina Banner */}
+                  <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 flex flex-col items-center justify-center animate-argentina-banner whitespace-nowrap">
+                    <span className="text-4xl sm:text-7xl font-extrabold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-white to-sky-400 drop-shadow-[0_5px_15px_rgba(56,189,248,0.6)]">
+                      ¡VAMOS ARGENTINA!
+                    </span>
+                    <span className="text-3xl sm:text-5xl mt-4">🎺 🇦🇷 🎺</span>
+                  </div>
+                </>
               )}
             </div>
           )
