@@ -1028,12 +1028,12 @@ export default function App() {
                   <img
                     src="/maradona.png"
                     alt="Diego Maradona"
-                    className="fixed bottom-0 left-0 h-[280px] sm:h-[450px] md:h-[550px] w-auto object-contain pointer-events-none z-40 animate-slide-left-idol"
+                    className="fixed top-1/2 left-4 sm:left-8 md:left-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-cover border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-left-idol"
                   />
                   <img
                     src="/messi.png"
                     alt="Lionel Messi"
-                    className="fixed bottom-0 right-0 h-[280px] sm:h-[450px] md:h-[550px] w-auto object-contain pointer-events-none z-40 animate-slide-right-idol"
+                    className="fixed top-1/2 right-4 sm:right-8 md:right-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-cover border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-right-idol"
                   />
 
                   {/* Pulsing Argentina Banner */}

@@ -95,23 +95,23 @@
 
 @keyframes slideUpLeft {
   0% {
-    transform: translateY(100%) scale(0.85);
+    transform: translateY(80%) scale(0.8);
     opacity: 0;
   }
   100% {
-    transform: translateY(0) scale(1);
-    opacity: 0.95;
+    transform: translateY(-50%) scale(1);
+    opacity: 0.8;
   }
 }
 
 @keyframes slideUpRight {
   0% {
-    transform: translateY(100%) scale(0.85);
+    transform: translateY(80%) scale(0.8);
     opacity: 0;
   }
   100% {
-    transform: translateY(0) scale(1);
-    opacity: 0.95;
+    transform: translateY(-50%) scale(1);
+    opacity: 0.8;
   }
 }
 
