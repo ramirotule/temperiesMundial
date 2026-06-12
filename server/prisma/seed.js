@@ -7,7 +7,7 @@ const EMPLOYEES = [
   'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
   'Rocio Smidt', 'Alejandro Morreale', 'Daiana Amarante', 'Leandro Saraceno', 'Franco Flores',
   'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
-  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito', 'Florencia Belsito', 'Ailen Fleites'
+  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito', 'Florencia Belsito', 'Ailen Fleites','Vanesa DellAqua','Guillermo Belsito'
 ];
 
 const TEAMS = [
@@ -221,7 +221,9 @@ async function main() {
     'Dolores Bruzzone': 'dol.824',
     'Julieta Belsito': 'jul.375',
     'Florencia Belsito': 'flo.849',
-    'Ailen Fleites': 'ail.716'
+    'Ailen Fleites': 'ail.716',
+    'Vanesa DellAcqua': 'van.392',
+    'Guillermo Belsito': 'gui.684'
   };
 
   // 1. Seed Users
