@@ -277,9 +277,27 @@ export default function App() {
   });
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [isHoveringLoginLogo, setIsHoveringLoginLogo] = useState(false);
+  const confettiParticles = useMemo(() => {
+    if (!isHoveringLoginLogo) return [];
+    return Array.from({ length: 50 }).map((_, i) => {
+      const isCeleste = Math.random() > 0.5;
+      return {
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 2 + Math.random() * 2.5,
+        size: 7 + Math.random() * 8,
+        color: isCeleste ? "#75AADB" : "#FFFFFF",
+        rotation: Math.random() * 360,
+      };
+    });
+  }, [isHoveringLoginLogo]);
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
   const [showLoginForm, setShowLoginForm] = useState<boolean>(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
 
   // Fetch users list (always needed, but updates in background if cache exists)
   useEffect(() => {
@@ -802,26 +820,76 @@ export default function App() {
 
                 <form onSubmit={handleLoginSubmit} className="space-y-5">
                   <div>
+                   <div className="relative">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
                       Usuario / Empleado
                     </label>
-                    <select
-                      className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-indigo-500 transition-colors"
-                      value={selectedUserId}
-                      onChange={(e) => {
-                        setSelectedUserId(e.target.value);
-                        setLoginError("");
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserDropdownOpen((prev) => !prev);
+                        setUserSearchQuery("");
                       }}
+                      className="w-full bg-bg-input border border-border-color rounded-xl px-4 py-3 text-left text-text-primary focus:outline-none focus:border-indigo-500 transition-colors flex items-center justify-between text-sm font-semibold"
                     >
-                      <option value="" disabled>
-                        Seleccioná tu nombre...
-                      </option>
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name} {user.role === "admin" ? "(Admin)" : ""}
-                        </option>
-                      ))}
-                    </select>
+                      <span className={selectedUserId ? "text-text-primary font-bold" : "text-text-muted/65"}>
+                        {selectedUserId
+                          ? users.find((u) => u.id === selectedUserId)?.name
+                          : "Seleccioná tu nombre..."}
+                      </span>
+                      <span className="text-text-muted text-[10px] transition-transform duration-200" style={{ transform: isUserDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+                        ▼
+                      </span>
+                    </button>
+
+                    {isUserDropdownOpen && (
+                      <div className="absolute z-50 left-0 right-0 mt-2 bg-slate-900/95 dark:bg-slate-950/95 border border-border-color rounded-2xl shadow-2xl p-3 space-y-2 max-h-60 overflow-y-auto animate-fade-in backdrop-blur-xl">
+                        <input
+                          type="text"
+                          placeholder="Buscar tu nombre..."
+                          value={userSearchQuery}
+                          onChange={(e) => setUserSearchQuery(e.target.value)}
+                          className="w-full bg-slate-950 border border-border-color rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-indigo-500 transition-colors"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="space-y-1">
+                          {users
+                            .filter((user) =>
+                              user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
+                            )
+                            .map((user) => (
+                              <button
+                                key={user.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedUserId(user.id);
+                                  setLoginError("");
+                                  setIsUserDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-between ${
+                                  selectedUserId === user.id
+                                    ? "bg-indigo-600 text-white font-bold"
+                                    : "text-text-secondary hover:bg-slate-800/80 hover:text-white"
+                                }`}
+                              >
+                                <span>
+                                  {user.name} {user.role === "admin" ? "(Admin)" : ""}
+                                </span>
+                                {selectedUserId === user.id && <span>✓</span>}
+                              </button>
+                            ))}
+                          {users.filter((user) =>
+                            user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <p className="text-[10px] text-text-muted text-center py-2">
+                              No se encontraron empleados
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   </div>
 
                   <div>
@@ -870,7 +938,9 @@ export default function App() {
                 {/* Clickable zone for the eye logo mark at the top center of the background image */}
                 <button
                   onClick={() => setShowLoginForm(true)}
-                  className="absolute top-[2%] left-[32%] w-[36%] h-[20%] rounded-full cursor-pointer hover:bg-white/5 active:scale-95 transition-all duration-300 border border-transparent hover:border-white/10 flex items-center justify-center"
+                  onMouseEnter={() => setIsHoveringLoginLogo(true)}
+                  onMouseLeave={() => setIsHoveringLoginLogo(false)}
+                  className="absolute top-[2%] left-[32%] w-[36%] h-[20%] rounded-full cursor-pointer transition-all duration-300 border border-transparent flex items-center justify-center arg-heartbeat-hover active:scale-95"
                   title="Hacé click en el logo para ingresar"
                 >
                   <span className="sr-only">Ingresar</span>
@@ -879,6 +949,30 @@ export default function App() {
               <p className="text-xs font-semibold tracking-wider text-slate-300/80 select-none animate-pulse text-center max-w-xs mt-2 bg-slate-950/70 border border-white/10 px-4 py-2 rounded-full backdrop-blur-sm shadow-xl">
                 💡 Tip: Pasá el mouse por el logo de Temperies para ingresar
               </p>
+
+              {/* Falling confetti */}
+              {isHoveringLoginLogo && (
+                <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                  {confettiParticles.map((p) => (
+                    <div
+                      key={p.id}
+                      className="absolute top-0 animate-confetti-fall"
+                      style={{
+                        left: `${p.left}%`,
+                        width: `${p.size}px`,
+                        height: `${p.size * 1.5}px`,
+                        backgroundColor: p.color,
+                        animationDelay: `${p.delay}s`,
+                        animationDuration: `${p.duration}s`,
+                        transform: `rotate(${p.rotation}deg)`,
+                        opacity: 0.8,
+                        borderRadius: "2px",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )
         ) : (

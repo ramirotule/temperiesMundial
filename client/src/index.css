@@ -43,3 +43,53 @@
     @apply font-sans antialiased transition-colors duration-200 selection:bg-indigo-500 selection:text-white;
   }
 }
+
+/* Argentina Heartbeat & Confetti Animations */
+@keyframes argPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0px rgba(117, 170, 219, 0.7), 0 0 0 0px rgba(255, 255, 255, 0.8), 0 0 0 0px rgba(117, 170, 219, 0.4);
+  }
+  35% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(117, 170, 219, 0.6), 0 0 0 18px rgba(255, 255, 255, 0.6), 0 0 0 28px rgba(117, 170, 219, 0.35);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 12px rgba(117, 170, 219, 0.5), 0 0 0 22px rgba(255, 255, 255, 0.5), 0 0 0 34px rgba(117, 170, 219, 0.25);
+  }
+  65% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 8px rgba(117, 170, 219, 0.4), 0 0 0 16px rgba(255, 255, 255, 0.4), 0 0 0 24px rgba(117, 170, 219, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0px rgba(117, 170, 219, 0), 0 0 0 0px rgba(255, 255, 255, 0), 0 0 0 0px rgba(117, 170, 219, 0);
+  }
+}
+
+.arg-heartbeat-hover:hover {
+  animation: argPulse 1.2s infinite ease-in-out;
+  background-color: rgba(117, 170, 219, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-50px) rotate(0deg) translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(360deg) translateX(25px);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg) translateX(-25px);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confettiFall linear infinite;
+}
+

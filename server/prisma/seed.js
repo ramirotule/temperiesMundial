@@ -5,9 +5,9 @@ const prisma = new PrismaClient();
 const EMPLOYEES = [
   'Eduardo Rodriguez', 'Gabriel Vergara', 'Matias Mercado', 'Alejandro Riccillo', 'Claudio Mazolli',
   'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
-  'Rocio Smidt', 'Alejandro Morreale', 'Daiana', 'Leandro Saraceno', 'Franco Flores',
+  'Rocio Smidt', 'Alejandro Morreale', 'Daiana Amarante', 'Leandro Saraceno', 'Franco Flores',
   'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
-  'Nacho', 'Conrado Blanco'
+  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito'
 ];
 
 const TEAMS = [
@@ -167,7 +167,7 @@ async function main() {
     'Milagros Aranzabe': 'mil.198',
     'Rocio Smidt': 'roc.542',
     'Alejandro Morreale': 'mor.703',
-    'Daiana': 'dai.619',
+    'Daiana Amarante': 'dai.619',
     'Leandro Saraceno': 'lea.285',
     'Franco Flores': 'fra.390',
     'Nicola Cocciaretti': 'nic.571',
@@ -176,7 +176,9 @@ async function main() {
     'Lucas Gil': 'luc.902',
     'Matias Dieguez': 'die.384',
     'Nacho': 'nac.750',
-    'Conrado Blanco': 'con.426'
+    'Conrado Blanco': 'con.426',
+    'Dolores Bruzzone': 'dol.824',
+    'Julieta Belsito': 'jul.375'
   };
 
   // 1. Seed Users

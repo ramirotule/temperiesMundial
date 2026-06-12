@@ -179,9 +179,9 @@ function hashString(str: string): number {
 export const EMPLOYEES = [
   'Eduardo Rodriguez', 'Gabriel Vergara', 'Matias Mercado', 'Alejandro Riccillo', 'Claudio Mazolli',
   'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
-  'Rocio Smidt', 'Alejandro Morreale', 'Daiana', 'Leandro Saraceno', 'Franco Flores',
+  'Rocio Smidt', 'Alejandro Morreale', 'Daiana Amarante', 'Leandro Saraceno', 'Franco Flores',
   'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
-  'Nacho', 'Conrado Blanco'
+  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito'
 ];
 
 export const PASSWORD_MAP: Record<string, string> = {
@@ -197,7 +197,7 @@ export const PASSWORD_MAP: Record<string, string> = {
   'Milagros Aranzabe': 'mil.198',
   'Rocio Smidt': 'roc.542',
   'Alejandro Morreale': 'mor.703',
-  'Daiana': 'dai.619',
+  'Daiana Amarante': 'dai.619',
   'Leandro Saraceno': 'lea.285',
   'Franco Flores': 'fra.390',
   'Nicola Cocciaretti': 'nic.571',
@@ -206,7 +206,9 @@ export const PASSWORD_MAP: Record<string, string> = {
   'Lucas Gil': 'luc.902',
   'Matias Dieguez': 'die.384',
   'Nacho': 'nac.750',
-  'Conrado Blanco': 'con.426'
+  'Conrado Blanco': 'con.426',
+  'Dolores Bruzzone': 'dol.824',
+  'Julieta Belsito': 'jul.375'
 };
 
 export const MOCK_USERS: User[] = [
