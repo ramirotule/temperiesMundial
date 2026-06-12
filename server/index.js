@@ -267,6 +267,33 @@ app.post('/api/admin/reset', async (req, res) => {
   }
 });
 
+// 8. Admin: Clear all predictions (Reset participants' predictions to 0 points)
+app.post('/api/admin/clear-predictions', async (req, res) => {
+  try {
+    await prisma.prediction.deleteMany();
+    res.json({ success: true, message: 'Todos los pronósticos fueron eliminados con éxito.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al limpiar pronósticos.' });
+  }
+});
+
+// 9. Admin: Reset all matches to scheduled / no scores
+app.post('/api/admin/reset-matches', async (req, res) => {
+  try {
+    await prisma.match.updateMany({
+      data: {
+        homeScore: null,
+        awayScore: null,
+        status: 'scheduled'
+      }
+    });
+    res.json({ success: true, message: 'Todos los partidos se restablecieron a pendientes sin goles.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al restablecer partidos.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+

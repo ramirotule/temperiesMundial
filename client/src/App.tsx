@@ -108,7 +108,7 @@ function getGroupStandingsWithStatus(
   const currentStandings = computeGroupStandingsForGroup(groupChar, matchesList, teamsList);
   const groupMatches = matchesList.filter(m => m.group === groupChar);
   
-  const remainingMatches = groupMatches.filter(m => m.homeScore === null || m.awayScore === null || m.status === 'scheduled');
+  const remainingMatches = groupMatches.filter(m => m.status !== 'finished');
   
   if (remainingMatches.length === 0) {
     return currentStandings.map((s, idx) => ({
@@ -247,31 +247,54 @@ export default function App() {
   const [predictions, setPredictions] = useState<
     Record<string, Record<string, Prediction>>
   >({});
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem("prode_users_cache");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
   const [showLoginForm, setShowLoginForm] = useState<boolean>(false);
 
-  // Fetch initial data from Express server API
+  // Fetch users list (always needed, but updates in background if cache exists)
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchUsers = async () => {
       try {
-        const [resUsers, resMatches, resPredictions] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/users`).then((r) => r.json()),
+        const res = await fetch(`${API_BASE_URL}/api/users`);
+        const data = await res.json();
+        setUsers(data);
+        localStorage.setItem("prode_users_cache", JSON.stringify(data));
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, [API_BASE_URL]);
+
+  // Fetch matches and predictions only when a user is logged in
+  useEffect(() => {
+    if (!currentUser) {
+      setMatches([]);
+      setPredictions({});
+      return;
+    }
+
+    const fetchDashboardData = async () => {
+      try {
+        const [resMatches, resPredictions] = await Promise.all([
           fetch(`${API_BASE_URL}/api/matches`).then((r) => r.json()),
           fetch(`${API_BASE_URL}/api/predictions`).then((r) => r.json()),
         ]);
-        setUsers(resUsers);
         setMatches(resMatches);
         setPredictions(resPredictions);
       } catch (error) {
-        console.error("Error fetching data from API:", error);
+        console.error("Error fetching dashboard data:", error);
       }
     };
-    fetchInitialData();
-  }, []);
+    fetchDashboardData();
+  }, [currentUser, API_BASE_URL]);
+
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -557,6 +580,50 @@ export default function App() {
       setErrorModalMsg("Error de conexión al guardar resultado.");
     }
   };
+
+  const handleClearPredictions = async () => {
+    if (!window.confirm("¿Estás seguro de que querés eliminar todos los pronósticos? Esto reseteará los puntajes de los participantes a 0.")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/clear-predictions`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorModalMsg(data.error || "Error al limpiar pronósticos.");
+        return;
+      }
+      setPredictions({});
+      alert("Pronósticos eliminados y resultados reseteados a 0 con éxito.");
+    } catch (error) {
+      setErrorModalMsg("Error de conexión al resetear pronósticos.");
+    }
+  };
+
+  const handleResetMatches = async () => {
+    if (!window.confirm("¿Estás seguro de que querés restablecer todos los partidos a pendientes sin goles?")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/reset-matches`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorModalMsg(data.error || "Error al restablecer partidos.");
+        return;
+      }
+      setMatches((prev) =>
+        prev.map((m) => ({
+          ...m,
+          homeScore: null,
+          awayScore: null,
+          status: "scheduled",
+        }))
+      );
+      alert("Partidos restablecidos con éxito.");
+    } catch (error) {
+      setErrorModalMsg("Error de conexión al restablecer partidos.");
+    }
+  };
+
 
   return (
     <div
@@ -978,6 +1045,21 @@ export default function App() {
                   >
                     📅 Partidos de Hoy
                   </button>
+                </div>
+
+                {/* Warning Penalty Banner */}
+                <div className="bg-rose-500/10 dark:bg-rose-950/20 border border-rose-500/25 rounded-2xl p-4 flex items-start gap-3 shadow-md shadow-rose-500/5">
+                  <div className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl mt-0.5">
+                    <AlertCircle className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-rose-700 dark:text-rose-400">
+                      ⚠️ ¡Atención! Penalización por No Participar
+                    </h4>
+                    <p className="text-xs text-rose-600/90 dark:text-rose-300/90 mt-1 leading-relaxed">
+                      Si un partido finaliza y <strong>no cargaste ningún pronóstico</strong>, se te penalizará restando <strong>1 punto (-1)</strong> del acumulado general. ¡No te olvides de guardar tus pronósticos a tiempo!
+                    </p>
+                  </div>
                 </div>
 
                 {/* Matches Grid */}
@@ -1454,6 +1536,21 @@ export default function App() {
                             </p>
                           </div>
                         </div>
+
+                        {/* Penalty for missing prediction */}
+                        <div className="bg-red-500/10 dark:bg-red-950/20 border border-red-500/35 rounded-xl p-3.5 flex items-start gap-3 animate-pulse">
+                          <div className="bg-red-500/20 border border-red-500/40 text-red-600 dark:text-red-400 text-xs font-black px-2.5 py-1 rounded-lg">
+                            -1 PT
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold text-red-700 dark:text-red-400">
+                              ⚠️ Penalización por No Participar
+                            </h5>
+                            <p className="text-[11px] text-red-600/90 dark:text-red-300/95 mt-1 leading-normal">
+                              Si un partido finaliza y <strong>no cargaste ningún pronóstico</strong>, se te restará <strong>1 punto (-1)</strong> de tu puntaje general.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1591,8 +1688,8 @@ export default function App() {
                                             </span>
                                           )}
                                           {teamStanding.status === "in_play" && (
-                                            <span className="bg-slate-500/10 border border-slate-500/20 text-text-muted font-bold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                                              En juego
+                                            <span className="text-text-muted font-bold text-xs">
+                                              -
                                             </span>
                                           )}
                                         </td>
@@ -1921,6 +2018,31 @@ export default function App() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div className={`${CARD_STYLE} border-red-500/20 shadow-red-500/5`}>
+                  <h3 className="text-lg font-black text-red-500 mb-2">
+                    Acciones de Mantenimiento / Reseteo
+                  </h3>
+                  <p className="text-xs text-text-secondary mb-6">
+                    Opciones de control para reiniciar datos del sistema.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <button
+                      onClick={handleClearPredictions}
+                      className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs transition-all active:scale-98 cursor-pointer shadow-md"
+                      title="Elimina todos los pronósticos creados por los empleados, dejando sus puntajes en 0."
+                    >
+                      Resetear Puntajes de Participantes (Borrar Pronósticos)
+                    </button>
+                    <button
+                      onClick={handleResetMatches}
+                      className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs transition-all active:scale-98 cursor-pointer shadow-md"
+                      title="Restablece los marcadores reales de los partidos a pendientes sin goles cargados."
+                    >
+                      Restablecer Partidos Reales (Poner todos a Pendiente)
+                    </button>
                   </div>
                 </div>
               </div>
