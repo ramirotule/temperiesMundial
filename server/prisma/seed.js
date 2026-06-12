@@ -103,25 +103,66 @@ function generateMatches() {
     ];
     
     pairings.forEach((pair, idx) => {
-      let dayOffset = 0;
-      if (pair.round === 1) {
-        dayOffset = groups.indexOf(groupChar);
-      } else if (pair.round === 2) {
-        dayOffset = 12 + groups.indexOf(groupChar);
-      } else {
-        dayOffset = 24 + groups.indexOf(groupChar);
+      const groupIdx = groups.indexOf(groupChar);
+      const isSecondHalf = groupIdx >= 6;
+      const baseGroupIdx = isSecondHalf ? groupIdx - 6 : groupIdx;
+      const dayOffset = isSecondHalf ? 4 : 0;
+
+      let day = 11;
+      let hour = 12;
+
+      if (baseGroupIdx === 0) { // Group A / G
+        if (idx === 0) { day = 11; hour = 16; }
+        else if (idx === 1) { day = 11; hour = 23; }
+        else if (idx === 2) { day = 18; hour = 22; }
+        else if (idx === 3) { day = 18; hour = 13; }
+        else if (idx === 4) { day = 24; hour = 22; }
+        else if (idx === 5) { day = 24; hour = 22; }
+      }
+      else if (baseGroupIdx === 1) { // Group B / H
+        if (idx === 0) { day = 12; hour = 16; }
+        else if (idx === 1) { day = 13; hour = 16; }
+        else if (idx === 2) { day = 18; hour = 19; }
+        else if (idx === 3) { day = 18; hour = 16; }
+        else if (idx === 4) { day = 24; hour = 16; }
+        else if (idx === 5) { day = 24; hour = 16; }
+      }
+      else if (baseGroupIdx === 2) { // Group C / I
+        if (idx === 0) { day = 13; hour = 19; }
+        else if (idx === 1) { day = 13; hour = 22; }
+        else if (idx === 2) { day = 19; hour = 22; }
+        else if (idx === 3) { day = 19; hour = 19; }
+        else if (idx === 4) { day = 24; hour = 19; }
+        else if (idx === 5) { day = 24; hour = 19; }
+      }
+      else if (baseGroupIdx === 3) { // Group D / J
+        if (idx === 0) { day = 12; hour = 22; }
+        else if (idx === 1) { day = 14; hour = 1; }
+        else if (idx === 2) { day = 19; hour = 16; }
+        else if (idx === 3) { day = 20; hour = 0; }
+        else if (idx === 4) { day = 25; hour = 23; }
+        else if (idx === 5) { day = 25; hour = 23; }
+      }
+      else if (baseGroupIdx === 4) { // Group E / K
+        if (idx === 0) { day = 14; hour = 14; }
+        else if (idx === 1) { day = 14; hour = 20; }
+        else if (idx === 2) { day = 20; hour = 17; }
+        else if (idx === 3) { day = 20; hour = 21; }
+        else if (idx === 4) { day = 25; hour = 17; }
+        else if (idx === 5) { day = 25; hour = 17; }
+      }
+      else if (baseGroupIdx === 5) { // Group F / L
+        if (idx === 0) { day = 14; hour = 17; }
+        else if (idx === 1) { day = 14; hour = 23; }
+        else if (idx === 2) { day = 20; hour = 14; }
+        else if (idx === 3) { day = 21; hour = 1; }
+        else if (idx === 4) { day = 25; hour = 20; }
+        else if (idx === 5) { day = 25; hour = 20; }
       }
       
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
-      
-      // Kickoff hours directly in Argentina Time (ART) as per TN schedule
-      const timesART = [16, 23, 19, 13];
-      const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
-      const hourART = timesART[timeSlot];
-      
-      // Since Argentina is UTC-3, we do UTC = hourART + 3
-      const hourUTC = hourART + 3;
-      const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
+      const hourUTC = hour + 3;
+      const matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
       
       let status = 'scheduled';
       let homeScore = null;
@@ -143,7 +184,7 @@ function generateMatches() {
     });
   });
 
-  return matches;
+  return matches.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 async function main() {

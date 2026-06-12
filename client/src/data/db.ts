@@ -78,14 +78,11 @@ export const STADIUMS = [
   'BMO Field, Toronto'
 ];
 
-// Generate matches programmatically
+// Generate matches pro// Generate matches programmatically
 export function generateMatches(): Match[] {
   const matches: Match[] = [];
   const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
   
-  // Starting date is June 11, 2026.
-  // 12 groups, 6 matches per group = 72 matches.
-  // We'll spread them over 16 days (June 11 to June 26), 4 or 5 matches per day.
   let matchIndex = 1;
   
   groups.forEach((groupChar) => {
@@ -103,45 +100,81 @@ export function generateMatches(): Match[] {
     ];
     
     pairings.forEach((pair, idx) => {
-      // Calculate date offset based on group and round to stagger the matches
-      // Round 1: Days 0-4 (June 11 - June 15)
-      // Round 2: Days 5-9 (June 16 - June 20)
-      // Round 3: Days 10-14 (June 21 - June 25)
-      let dayOffset = 0;
-      if (pair.round === 1) {
-        dayOffset = groups.indexOf(groupChar);
-      } else if (pair.round === 2) {
-        dayOffset = 12 + groups.indexOf(groupChar);
-      } else {
-        dayOffset = 24 + groups.indexOf(groupChar);
+      const groupIdx = groups.indexOf(groupChar);
+      const isSecondHalf = groupIdx >= 6;
+      const baseGroupIdx = isSecondHalf ? groupIdx - 6 : groupIdx;
+      const dayOffset = isSecondHalf ? 4 : 0;
+
+      let day = 11;
+      let hour = 12;
+
+      if (baseGroupIdx === 0) { // Group A / G
+        if (idx === 0) { day = 11; hour = 16; }
+        else if (idx === 1) { day = 11; hour = 23; }
+        else if (idx === 2) { day = 18; hour = 22; }
+        else if (idx === 3) { day = 18; hour = 13; }
+        else if (idx === 4) { day = 24; hour = 22; }
+        else if (idx === 5) { day = 24; hour = 22; }
+      }
+      else if (baseGroupIdx === 1) { // Group B / H
+        if (idx === 0) { day = 12; hour = 16; }
+        else if (idx === 1) { day = 13; hour = 16; }
+        else if (idx === 2) { day = 18; hour = 19; }
+        else if (idx === 3) { day = 18; hour = 16; }
+        else if (idx === 4) { day = 24; hour = 16; }
+        else if (idx === 5) { day = 24; hour = 16; }
+      }
+      else if (baseGroupIdx === 2) { // Group C / I
+        if (idx === 0) { day = 13; hour = 19; }
+        else if (idx === 1) { day = 13; hour = 22; }
+        else if (idx === 2) { day = 19; hour = 22; }
+        else if (idx === 3) { day = 19; hour = 19; }
+        else if (idx === 4) { day = 24; hour = 19; }
+        else if (idx === 5) { day = 24; hour = 19; }
+      }
+      else if (baseGroupIdx === 3) { // Group D / J
+        if (idx === 0) { day = 12; hour = 22; }
+        else if (idx === 1) { day = 14; hour = 1; }
+        else if (idx === 2) { day = 19; hour = 16; }
+        else if (idx === 3) { day = 20; hour = 0; }
+        else if (idx === 4) { day = 25; hour = 23; }
+        else if (idx === 5) { day = 25; hour = 23; }
+      }
+      else if (baseGroupIdx === 4) { // Group E / K
+        if (idx === 0) { day = 14; hour = 14; }
+        else if (idx === 1) { day = 14; hour = 20; }
+        else if (idx === 2) { day = 20; hour = 17; }
+        else if (idx === 3) { day = 20; hour = 21; }
+        else if (idx === 4) { day = 25; hour = 17; }
+        else if (idx === 5) { day = 25; hour = 17; }
+      }
+      else if (baseGroupIdx === 5) { // Group F / L
+        if (idx === 0) { day = 14; hour = 17; }
+        else if (idx === 1) { day = 14; hour = 23; }
+        else if (idx === 2) { day = 20; hour = 14; }
+        else if (idx === 3) { day = 21; hour = 1; }
+        else if (idx === 4) { day = 25; hour = 20; }
+        else if (idx === 5) { day = 25; hour = 20; }
       }
       
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
-      
-      // Kickoff hours directly in Argentina Time (ART) as per TN schedule
-      const timesART = [16, 23, 19, 13];
-      const timeSlot = (groups.indexOf(groupChar) + idx) % 4;
-      const hourART = timesART[timeSlot];
-      
-      // Since Argentina is UTC-3, we do UTC = hourART + 3
-      const hourUTC = hourART + 3;
-      const matchDate = new Date(Date.UTC(2026, 5, 11 + dayOffset, hourUTC, 0, 0));
+      const hourUTC = hour + 3;
+      const matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
       
       // Let's set some match statuses:
-      // First 4 matches are finished to show score calculation
+      // First 6 matches are finished to show score calculation
       let status: 'scheduled' | 'live' | 'finished' = 'scheduled';
       let homeScore: number | null = null;
       let awayScore: number | null = null;
       
       if (matchIndex <= 6) {
         status = 'finished';
-        // Mock some realistic results
-        if (matchIndex === 1) { homeScore = 2; awayScore = 1; } // Mex vs RSA
-        else if (matchIndex === 2) { homeScore = 1; awayScore = 1; } // Kor vs Cze
-        else if (matchIndex === 3) { homeScore = 0; awayScore = 2; } // Can vs BiH
-        else if (matchIndex === 4) { homeScore = 3; awayScore = 2; } // Bra vs Mar
-        else if (matchIndex === 5) { homeScore = 1; awayScore = 0; } // USA vs Par
-        else { homeScore = 2; awayScore = 2; } // Qat vs Sui
+        if (matchIndex === 1) { homeScore = 2; awayScore = 0; } // Mex vs RSA
+        else if (matchIndex === 2) { homeScore = 2; awayScore = 1; } // Kor vs Cze
+        else if (matchIndex === 3) { homeScore = 0; awayScore = 2; }
+        else if (matchIndex === 4) { homeScore = 3; awayScore = 2; }
+        else if (matchIndex === 5) { homeScore = 1; awayScore = 0; }
+        else { homeScore = 2; awayScore = 2; }
       } else if (matchIndex === 7 || matchIndex === 8) {
         status = 'live';
         homeScore = 1;
