@@ -954,6 +954,17 @@ export default function App() {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab("groupStandings")}
+                  className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    activeTab === "groupStandings"
+                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                      : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
+                  }`}
+                >
+                  <Trophy className="w-4 h-4" /> Posiciones Mundial
+                </button>
+
+                <button
                   onClick={() => setActiveTab("leaderboard")}
                   className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
                     activeTab === "leaderboard"
@@ -973,17 +984,6 @@ export default function App() {
                   }`}
                 >
                   <BookOpen className="w-4 h-4" /> Reglamento
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("groupStandings")}
-                  className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    activeTab === "groupStandings"
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                      : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
-                  }`}
-                >
-                  <Trophy className="w-4 h-4" /> Posiciones Mundial
                 </button>
 
                 {currentUser.role === "admin" && (
