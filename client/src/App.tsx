@@ -243,15 +243,12 @@ function mapMatchStatus(match: Match): Match {
   return { ...match, status };
 }
 
-const playTrumpetSound = () => {
-  try {
-    const audio = new Audio("/vamos.mp3");
-    audio.volume = 0.5;
-    audio.play();
-  } catch (e) {
-    console.error("Audio playback error", e);
-  }
-};
+const backgroundAudio = typeof Audio !== "undefined" ? (() => {
+  const audio = new Audio("/vamos.mp3");
+  audio.loop = true;
+  audio.volume = 0.35; // Soft volume
+  return audio;
+})() : null;
 
 export default function App() {
   const [isMuted, setIsMuted] = useState<boolean>(() => {
@@ -259,15 +256,9 @@ export default function App() {
     return saved ? saved === "true" : false; // Default to unmuted (false) so it tries to play
   });
 
-  const backgroundAudio = useMemo(() => {
-    const audio = new Audio("/vamos.mp3");
-    audio.loop = true;
-    audio.volume = 0.35; // Soft volume
-    return audio;
-  }, []);
-
   // Sync isMuted state with actual audio element
   useEffect(() => {
+    if (!backgroundAudio) return;
     localStorage.setItem("prode_audio_muted", isMuted ? "true" : "false");
     if (isMuted) {
       backgroundAudio.pause();
@@ -276,10 +267,11 @@ export default function App() {
         console.log("Autoplay blocked, waiting for user gesture.", err);
       });
     }
-  }, [isMuted, backgroundAudio]);
+  }, [isMuted]);
 
   // Autoplay bypass: play on first user interaction if not muted
   useEffect(() => {
+    if (!backgroundAudio) return;
     const startAudioOnInteraction = () => {
       if (!isMuted) {
         backgroundAudio.play().catch(() => {});
@@ -299,7 +291,7 @@ export default function App() {
       window.removeEventListener("keydown", startAudioOnInteraction);
       window.removeEventListener("touchstart", startAudioOnInteraction);
     };
-  }, [isMuted, backgroundAudio]);
+  }, [isMuted]);
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("prode_theme");
@@ -1014,11 +1006,9 @@ export default function App() {
                 <button
                   onClick={() => {
                     setShowLoginForm(true);
-                    playTrumpetSound();
                   }}
                   onMouseEnter={() => {
                     setIsHoveringLoginLogo(true);
-                    playTrumpetSound();
                   }}
                   onMouseLeave={() => setIsHoveringLoginLogo(false)}
                   className="absolute top-[2%] left-[32%] w-[36%] h-[20%] rounded-full cursor-pointer transition-all duration-300 border border-transparent flex items-center justify-center arg-heartbeat-hover active:scale-95"
