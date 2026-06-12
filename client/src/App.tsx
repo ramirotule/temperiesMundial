@@ -1118,7 +1118,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <BookOpen className="w-4 h-4" /> Reglamento
+                  <BookOpen className="w-4 h-4" /> Reglamento & Premios 🥇 🥈 🥉
                 </button>
 
                 {currentUser.role === "admin" && (
