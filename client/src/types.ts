@@ -50,5 +50,5 @@ export interface TeamStanding {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
-  status: "qualified" | "eliminated" | "in_play";
+  status: "qualified" | "eliminated" | "in_play" | "scheduled";
 }

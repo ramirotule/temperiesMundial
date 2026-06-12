@@ -44,6 +44,22 @@ function calculatePoints(match, prediction) {
   return { points: 0, type: 'none' };
 }
 
+function getMatchStatus(match) {
+  if (match.status === 'finished' || (match.homeScore !== null && match.awayScore !== null)) {
+    return 'finished';
+  }
+  const now = new Date();
+  const matchDate = new Date(match.date);
+  const diffMinutes = (now.getTime() - matchDate.getTime()) / (1000 * 60);
+
+  if (diffMinutes >= 110) {
+    return 'finished';
+  } else if (diffMinutes >= 0) {
+    return 'live';
+  }
+  return 'scheduled';
+}
+
 // 1. Authenticate / Login Endpoint
 app.post('/api/auth/login', async (req, res) => {
   const { userId, password } = req.body;
@@ -88,7 +104,11 @@ app.get('/api/matches', async (req, res) => {
     const matches = await prisma.match.findMany({
       orderBy: { date: 'asc' }
     });
-    res.json(matches);
+    const updatedMatches = matches.map(match => ({
+      ...match,
+      status: getMatchStatus(match)
+    }));
+    res.json(updatedMatches);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener partidos.' });
   }
@@ -137,7 +157,7 @@ app.post('/api/predictions', async (req, res) => {
     const now = new Date();
     const matchDate = new Date(match.date);
 
-    if (match.status !== 'scheduled' || now >= matchDate) {
+    if (getMatchStatus(match) !== 'scheduled' || now >= matchDate) {
       return res.status(400).json({ error: 'No se permite guardar resultados una vez comenzado o finalizado el partido.' });
     }
 
@@ -187,7 +207,10 @@ app.put('/api/admin/matches/:id', async (req, res) => {
       }
     });
 
-    res.json(match);
+    res.json({
+      ...match,
+      status: getMatchStatus(match)
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar partido.' });
   }

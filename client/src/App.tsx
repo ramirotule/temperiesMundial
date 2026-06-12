@@ -110,6 +110,13 @@ function getGroupStandingsWithStatus(
   
   const remainingMatches = groupMatches.filter(m => m.status !== 'finished');
   
+  if (groupMatches.every(m => m.status === 'scheduled')) {
+    return currentStandings.map(s => ({
+      ...s,
+      status: 'scheduled' as const
+    }));
+  }
+  
   if (remainingMatches.length === 0) {
     return currentStandings.map((s, idx) => ({
       ...s,
@@ -217,6 +224,23 @@ function getAvatarColor(str: string) {
   return colors[Math.abs(hash) % colors.length];
 }
 
+function mapMatchStatus(match: Match): Match {
+  if (match.status === "finished" || (match.homeScore !== null && match.awayScore !== null)) {
+    return { ...match, status: "finished" };
+  }
+  const now = new Date();
+  const matchDate = new Date(match.date);
+  const diffMinutes = (now.getTime() - matchDate.getTime()) / (1000 * 60);
+  
+  let status: Match["status"] = "scheduled";
+  if (diffMinutes >= 110) {
+    status = "finished";
+  } else if (diffMinutes >= 0) {
+    status = "live";
+  }
+  return { ...match, status };
+}
+
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("prode_theme");
@@ -286,7 +310,7 @@ export default function App() {
           fetch(`${API_BASE_URL}/api/matches`).then((r) => r.json()),
           fetch(`${API_BASE_URL}/api/predictions`).then((r) => r.json()),
         ]);
-        setMatches(resMatches);
+        setMatches(resMatches.map(mapMatchStatus));
         setPredictions(resPredictions);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -368,6 +392,7 @@ export default function App() {
       { homeScore: string; awayScore: string; status: Match["status"] }
     >
   >({});
+  const [editingFinishedMatches, setEditingFinishedMatches] = useState<Record<string, boolean>>({});
 
   // States for employee predictions editing
   const [predEdits, setPredEdits] = useState<
@@ -561,17 +586,22 @@ export default function App() {
       setMatches((prev) =>
         prev.map((m) =>
           m.id === matchId
-            ? {
+            ? mapMatchStatus({
                 ...m,
                 homeScore,
                 awayScore,
                 status: edit.status,
-              }
+              })
             : m,
         ),
       );
 
       setAdminEdits((prev) => {
+        const copy = { ...prev };
+        delete copy[matchId];
+        return copy;
+      });
+      setEditingFinishedMatches((prev) => {
         const copy = { ...prev };
         delete copy[matchId];
         return copy;
@@ -611,12 +641,14 @@ export default function App() {
         return;
       }
       setMatches((prev) =>
-        prev.map((m) => ({
-          ...m,
-          homeScore: null,
-          awayScore: null,
-          status: "scheduled",
-        }))
+        prev.map((m) =>
+          mapMatchStatus({
+            ...m,
+            homeScore: null,
+            awayScore: null,
+            status: "scheduled",
+          })
+        )
       );
       alert("Partidos restablecidos con éxito.");
     } catch (error) {
@@ -1678,18 +1710,23 @@ export default function App() {
                                         {/* Status badge */}
                                         <td className="py-3 px-2 text-center">
                                           {teamStanding.status === "qualified" && (
-                                            <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                            <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
                                               Clasificado
                                             </span>
                                           )}
                                           {teamStanding.status === "eliminated" && (
-                                            <span className="bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                            <span className="bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
                                               Eliminado
                                             </span>
                                           )}
                                           {teamStanding.status === "in_play" && (
-                                            <span className="text-text-muted font-bold text-xs">
-                                              -
+                                            <span className="bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                                              En juego
+                                            </span>
+                                          )}
+                                          {teamStanding.status === "scheduled" && (
+                                            <span className="bg-slate-500/10 border border-slate-500/20 text-text-muted font-bold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                                              Pendiente
                                             </span>
                                           )}
                                         </td>
@@ -1936,85 +1973,136 @@ export default function App() {
                           </div>
 
                           {/* Form inputs & status */}
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                placeholder="Goles L"
-                                value={editState.homeScore}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setAdminEdits((prev) => ({
-                                    ...prev,
-                                    [match.id]: {
-                                      ...(prev[match.id] || {
-                                        homeScore: "",
-                                        awayScore: editState.awayScore,
-                                        status: editState.status,
-                                      }),
-                                      homeScore: val,
-                                    },
-                                  }));
-                                }}
-                                className="w-14 h-9 text-center bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none focus:border-amber-500"
-                              />
-                              <span className="text-text-muted">:</span>
-                              <input
-                                type="number"
-                                placeholder="Goles V"
-                                value={editState.awayScore}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setAdminEdits((prev) => ({
-                                    ...prev,
-                                    [match.id]: {
-                                      ...(prev[match.id] || {
-                                        homeScore: editState.homeScore,
-                                        awayScore: "",
-                                        status: editState.status,
-                                      }),
-                                      awayScore: val,
-                                    },
-                                  }));
-                                }}
-                                className="w-14 h-9 text-center bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none focus:border-amber-500"
-                              />
-                            </div>
+                          {(() => {
+                            const isFinished = match.status === "finished";
+                            const isEditing = !isFinished || !!editingFinishedMatches[match.id];
+                            
+                            return (
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    placeholder="Goles"
+                                    value={editState.homeScore}
+                                    disabled={!isEditing}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setAdminEdits((prev) => ({
+                                        ...prev,
+                                        [match.id]: {
+                                          ...(prev[match.id] || {
+                                            homeScore: "",
+                                            awayScore: editState.awayScore,
+                                            status: editState.status,
+                                          }),
+                                          homeScore: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-14 h-9 text-center bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none focus:border-amber-500 placeholder:text-[9px] placeholder:text-center placeholder:font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                  <span className="text-text-muted">:</span>
+                                  <input
+                                    type="number"
+                                    placeholder="Goles"
+                                    value={editState.awayScore}
+                                    disabled={!isEditing}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setAdminEdits((prev) => ({
+                                        ...prev,
+                                        [match.id]: {
+                                          ...(prev[match.id] || {
+                                            homeScore: editState.homeScore,
+                                            awayScore: "",
+                                            status: editState.status,
+                                          }),
+                                          awayScore: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-14 h-9 text-center bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none focus:border-amber-500 placeholder:text-[9px] placeholder:text-center placeholder:font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                </div>
 
-                            {/* Status selector */}
-                            <select
-                              value={editState.status}
-                              onChange={(e) => {
-                                const val = e.target.value as Match["status"];
-                                setAdminEdits((prev) => ({
-                                  ...prev,
-                                  [match.id]: {
-                                    ...(prev[match.id] || {
-                                      homeScore: editState.homeScore,
-                                      awayScore: editState.awayScore,
-                                      status: "scheduled",
-                                    }),
-                                    status: val,
-                                  },
-                                }));
-                              }}
-                              className="bg-bg-input border border-border-color rounded-lg text-xs font-bold px-2.5 py-1.5 focus:outline-none text-text-secondary"
-                            >
-                              <option value="scheduled">Pendiente</option>
-                              <option value="live">En Vivo</option>
-                              <option value="finished">Finalizado</option>
-                            </select>
+                                {/* Status selector */}
+                                <select
+                                  value={editState.status}
+                                  disabled={!isEditing}
+                                  onChange={(e) => {
+                                    const val = e.target.value as Match["status"];
+                                    setAdminEdits((prev) => ({
+                                      ...prev,
+                                      [match.id]: {
+                                        ...(prev[match.id] || {
+                                          homeScore: editState.homeScore,
+                                          awayScore: editState.awayScore,
+                                          status: "scheduled",
+                                        }),
+                                        status: val,
+                                      },
+                                    }));
+                                  }}
+                                  className="bg-bg-input border border-border-color rounded-lg text-xs font-bold px-2.5 py-1.5 focus:outline-none text-text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <option value="scheduled">Pendiente</option>
+                                  <option value="live">En Vivo</option>
+                                  <option value="finished">Finalizado</option>
+                                </select>
 
-                            {/* Action Save */}
-                            {adminEdits[match.id] && (
-                              <button
-                                onClick={() => saveMatchResult(match.id)}
-                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all cursor-pointer flex items-center gap-1"
-                              >
-                                <Check className="w-3.5 h-3.5" /> Guardar
-                              </button>
-                            )}
-                          </div>
+                                {/* Action Save/Edit */}
+                                {isFinished ? (
+                                  !editingFinishedMatches[match.id] ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingFinishedMatches((prev) => ({ ...prev, [match.id]: true }))}
+                                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                    >
+                                      Editar
+                                    </button>
+                                  ) : (
+                                    <div className="flex items-center gap-1">
+                                      {adminEdits[match.id] && (
+                                        <button
+                                          onClick={() => saveMatchResult(match.id)}
+                                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                        >
+                                          <Check className="w-3.5 h-3.5" /> Guardar
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAdminEdits((prev) => {
+                                            const copy = { ...prev };
+                                            delete copy[match.id];
+                                            return copy;
+                                          });
+                                          setEditingFinishedMatches((prev) => {
+                                            const copy = { ...prev };
+                                            delete copy[match.id];
+                                            return copy;
+                                          });
+                                        }}
+                                        className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  )
+                                ) : (
+                                  adminEdits[match.id] && (
+                                    <button
+                                      onClick={() => saveMatchResult(match.id)}
+                                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                    >
+                                      <Check className="w-3.5 h-3.5" /> Guardar
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}
