@@ -117,16 +117,30 @@ app.get('/api/matches', async (req, res) => {
 // 4. Get All Predictions (or for current user)
 app.get('/api/predictions', async (req, res) => {
   try {
-    const predictions = await prisma.prediction.findMany();
+    const { currentUserId } = req.query;
+    const predictions = await prisma.prediction.findMany({
+      include: {
+        match: true
+      }
+    });
     // Group predictions as record mapping user_id -> match_id -> prediction
     const predictionMap = {};
+    const now = new Date();
+
     predictions.forEach(p => {
       if (!predictionMap[p.userId]) {
         predictionMap[p.userId] = {};
       }
+
+      const matchDate = new Date(p.match.date);
+      const isMatchStartedPlus1Min = now.getTime() >= matchDate.getTime() + 60 * 1000;
+      const isOwnPrediction = currentUserId && p.userId === currentUserId;
+      const canSeePrediction = isOwnPrediction || isMatchStartedPlus1Min;
+
       predictionMap[p.userId][p.matchId] = {
-        homeScore: p.homeScore,
-        awayScore: p.awayScore,
+        homeScore: canSeePrediction ? p.homeScore : null,
+        awayScore: canSeePrediction ? p.awayScore : null,
+        isBlocked: !canSeePrediction,
         createdAt: p.createdAt
       };
     });

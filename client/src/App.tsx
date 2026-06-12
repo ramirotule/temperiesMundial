@@ -13,6 +13,8 @@ import {
   Moon,
   BookOpen,
   Trophy,
+  Medal,
+  Award,
 } from "lucide-react";
 import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
 import { TEAMS } from "./data/db";
@@ -336,7 +338,7 @@ export default function App() {
       try {
         const [resMatches, resPredictions] = await Promise.all([
           fetch(`${API_BASE_URL}/api/matches`).then((r) => r.json()),
-          fetch(`${API_BASE_URL}/api/predictions`).then((r) => r.json()),
+          fetch(`${API_BASE_URL}/api/predictions?currentUserId=${currentUser.id}`).then((r) => r.json()),
         ]);
         setMatches(resMatches.map(mapMatchStatus));
         setPredictions(resPredictions);
@@ -1548,7 +1550,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column: General Rules & Locking */}
                     <div className="space-y-6">
                       <div className="bg-slate-500/5 border border-border-color rounded-xl p-5">
@@ -1613,7 +1615,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Right Column: Scoring System */}
+                    {/* Middle Column: Scoring System */}
                     <div className="bg-slate-500/5 border border-border-color rounded-xl p-5 space-y-4">
                       <h4 className="font-bold text-sm text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                         📊 Sistema de Puntajes
@@ -1711,6 +1713,88 @@ export default function App() {
                             </p>
                           </div>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Prizes / Premios */}
+                    <div className="bg-slate-500/5 border border-border-color rounded-xl p-5 space-y-4 flex flex-col justify-between">
+                      <div>
+                        <h4 className="font-bold text-sm text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          🎁 Premios del Torneo
+                        </h4>
+                        <p className="text-xs text-text-secondary leading-relaxed mb-4">
+                          ¡Esforzate al máximo! Estos son los premios oficiales para los tres mejores de la tabla de posiciones:
+                        </p>
+
+                        <div className="space-y-4">
+                          {/* 1st Place */}
+                          <div className="relative bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/35 rounded-2xl p-4 flex items-start gap-3.5 shadow-md shadow-amber-500/5 overflow-hidden group hover:scale-[1.02] transition-transform duration-200">
+                            <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+                            
+                            <div className="bg-amber-500/20 border border-amber-500/40 text-amber-500 p-2 rounded-xl flex items-center justify-center shadow-inner shrink-0">
+                              <Trophy className="w-6 h-6 animate-bounce" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">
+                                🥇 1º Puesto
+                              </span>
+                              <h5 className="text-sm font-black text-text-primary mt-0.5 leading-snug">
+                                Cena para Dos + Medio Día Libre Motiv
+                              </h5>
+                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                ¡El gran campeón se lleva una cena gourmet premium y medio día de descanso absoluto!
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* 2nd Place */}
+                          <div className="relative bg-gradient-to-br from-slate-400/15 to-slate-500/5 border border-slate-400/35 rounded-2xl p-4 flex items-start gap-3.5 shadow-md shadow-slate-400/5 overflow-hidden group hover:scale-[1.02] transition-transform duration-200">
+                            <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-slate-400/10 rounded-full blur-xl pointer-events-none"></div>
+
+                            <div className="bg-slate-400/20 border border-slate-400/40 text-slate-500 dark:text-slate-400 p-2 rounded-xl flex items-center justify-center shadow-inner shrink-0">
+                              <Medal className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+                                🥈 2º Puesto
+                              </span>
+                              <h5 className="text-sm font-black text-text-primary mt-0.5 leading-snug">
+                                Medio Día Libre Motiv
+                              </h5>
+                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                ¡Un gran desempeño merece una buena tarde libre para relajarte!
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* 3rd Place */}
+                          <div className="relative bg-gradient-to-br from-amber-700/10 to-amber-800/5 border border-amber-800/30 rounded-2xl p-4 flex items-start gap-3.5 shadow-md shadow-amber-800/5 overflow-hidden group hover:scale-[1.02] transition-transform duration-200">
+                            <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-amber-800/10 rounded-full blur-xl pointer-events-none"></div>
+
+                            <div className="bg-amber-800/20 border border-amber-800/40 text-amber-700 dark:text-amber-500 p-2 rounded-xl flex items-center justify-center shadow-inner shrink-0">
+                              <Award className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-black text-amber-800 dark:text-amber-500 uppercase tracking-widest">
+                                🥉 3º Puesto
+                              </span>
+                              <h5 className="text-sm font-black text-text-primary mt-0.5 leading-snug">
+                                Mitad de Puntos en Motiv
+                              </h5>
+                              <p className="text-[10px] text-text-muted mt-1 leading-normal">
+                                ¡Sumás la mitad de los puntos necesarios en Motiv para canjear por un medio día libre!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer/Motivation Badge */}
+                      <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-xl p-3.5 flex items-center gap-2.5 mt-4">
+                        <span className="text-base">🔥</span>
+                        <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-normal">
+                          ¡No dejes de cargar tus pronósticos! Cada punto cuenta para subir al podio.
+                        </p>
                       </div>
                     </div>
                   </div>
