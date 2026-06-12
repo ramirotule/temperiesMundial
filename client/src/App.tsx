@@ -13,8 +13,6 @@ import {
   Moon,
   BookOpen,
   Trophy,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
 import { TEAMS } from "./data/db";
@@ -243,56 +241,7 @@ function mapMatchStatus(match: Match): Match {
   return { ...match, status };
 }
 
-const backgroundAudio = typeof Audio !== "undefined" ? (() => {
-  const audio = new Audio("/vamos.mp3");
-  audio.loop = true;
-  audio.volume = 0.35; // Soft volume
-  return audio;
-})() : null;
-
 export default function App() {
-  const [isMuted, setIsMuted] = useState<boolean>(() => {
-    const saved = localStorage.getItem("prode_audio_muted");
-    return saved ? saved === "true" : false; // Default to unmuted (false) so it tries to play
-  });
-
-  // Sync isMuted state with actual audio element
-  useEffect(() => {
-    if (!backgroundAudio) return;
-    localStorage.setItem("prode_audio_muted", isMuted ? "true" : "false");
-    if (isMuted) {
-      backgroundAudio.pause();
-    } else {
-      backgroundAudio.play().catch((err) => {
-        console.log("Autoplay blocked, waiting for user gesture.", err);
-      });
-    }
-  }, [isMuted]);
-
-  // Autoplay bypass: play on first user interaction if not muted
-  useEffect(() => {
-    if (!backgroundAudio) return;
-    const startAudioOnInteraction = () => {
-      if (!isMuted) {
-        backgroundAudio.play().catch(() => {});
-      }
-      // Clean up listeners after first interaction
-      window.removeEventListener("click", startAudioOnInteraction);
-      window.removeEventListener("keydown", startAudioOnInteraction);
-      window.removeEventListener("touchstart", startAudioOnInteraction);
-    };
-
-    window.addEventListener("click", startAudioOnInteraction);
-    window.addEventListener("keydown", startAudioOnInteraction);
-    window.addEventListener("touchstart", startAudioOnInteraction);
-
-    return () => {
-      window.removeEventListener("click", startAudioOnInteraction);
-      window.removeEventListener("keydown", startAudioOnInteraction);
-      window.removeEventListener("touchstart", startAudioOnInteraction);
-    };
-  }, [isMuted]);
-
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("prode_theme");
     if (saved) return saved === "dark";
@@ -799,19 +748,6 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Mute/Unmute Audio Toggle */}
-          <button
-            onClick={() => setIsMuted((prev) => !prev)}
-            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 border border-border-color rounded-xl text-text-secondary transition-colors cursor-pointer"
-            title={isMuted ? "Activar Sonido" : "Silenciar"}
-          >
-            {isMuted ? (
-              <VolumeX className="w-4 h-4 text-rose-500" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-sky-500 animate-pulse" />
-            )}
-          </button>
-
           {/* Light/Dark Toggle */}
           {currentUser && (
             <button
