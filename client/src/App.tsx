@@ -298,6 +298,16 @@ export default function App() {
   const [showLoginForm, setShowLoginForm] = useState<boolean>(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [showPenaltyModal, setShowPenaltyModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      const hasSeen = localStorage.getItem(`prode_seen_penalty_warning_${currentUser.id}`);
+      if (!hasSeen) {
+        setShowPenaltyModal(true);
+      }
+    }
+  }, [currentUser]);
 
   // Fetch users list (always needed, but updates in background if cache exists)
   useEffect(() => {
@@ -1210,21 +1220,6 @@ export default function App() {
                   >
                     📅 Partidos de Hoy
                   </button>
-                </div>
-
-                {/* Warning Penalty Banner */}
-                <div className="bg-rose-500/10 dark:bg-rose-950/20 border border-rose-500/25 rounded-2xl p-4 flex items-start gap-3 shadow-md shadow-rose-500/5">
-                  <div className="p-2 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl mt-0.5">
-                    <AlertCircle className="w-5 h-5 animate-pulse" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-rose-700 dark:text-rose-400">
-                      ⚠️ ¡Atención! Penalización por No Participar
-                    </h4>
-                    <p className="text-xs text-rose-600/90 dark:text-rose-300/90 mt-1 leading-relaxed">
-                      Si un partido finaliza y <strong>no cargaste ningún pronóstico</strong>, se te penalizará restando <strong>1 punto (-1)</strong> del acumulado general. ¡No te olvides de guardar tus pronósticos a tiempo!
-                    </p>
-                  </div>
                 </div>
 
                 {/* Matches Grid */}
@@ -2295,6 +2290,10 @@ export default function App() {
                         : { points: new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00") ? -1 : 0, type: "none" as const }
                       : null;
 
+                  const isMatchStartedPlus1Min = new Date().getTime() >= new Date(match.date).getTime() + 60 * 1000;
+                  const isOwnPrediction = selectedUser.id === currentUser?.id;
+                  const canSeePrediction = isOwnPrediction || isMatchStartedPlus1Min;
+
                   return (
                     <div
                       key={match.id}
@@ -2331,11 +2330,20 @@ export default function App() {
                           <span className="text-[8px] font-bold text-text-muted uppercase">
                             Predijo
                           </span>
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md border border-indigo-500/20 mt-0.5">
-                            {userPred
-                              ? `${userPred.homeScore} - ${userPred.awayScore}`
-                              : "-"}
-                          </span>
+                          {canSeePrediction ? (
+                            <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md border border-indigo-500/20 mt-0.5">
+                              {userPred
+                                ? `${userPred.homeScore} - ${userPred.awayScore}`
+                                : "-"}
+                            </span>
+                          ) : (
+                            <span
+                              className="font-semibold text-[10px] text-text-muted bg-slate-500/10 px-2 py-0.5 rounded-md border border-slate-500/20 mt-0.5 select-none"
+                              title="Las predicciones de tus compañeros se revelan 1 minuto después del comienzo del partido"
+                            >
+                              {userPred ? "🔒 Oculto" : "-"}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex flex-col items-center">
@@ -2413,6 +2421,41 @@ export default function App() {
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-md shadow-indigo-600/20 hover:shadow-indigo-500/30 cursor-pointer text-sm"
             >
               Aceptar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Penalty Warning Modal */}
+      {currentUser && showPenaltyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-card border border-rose-500/30 rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-500"></div>
+            <div className="w-14 h-14 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-full flex items-center justify-center text-2xl mb-4 animate-pulse">
+              ⚠️
+            </div>
+            <h3 className="font-extrabold text-xl text-rose-600 dark:text-rose-400 mb-3">
+              ¡Penalización por No Participar!
+            </h3>
+            <p className="text-text-primary text-sm font-semibold mb-4 leading-relaxed">
+              Hola, <span className="text-indigo-500">{currentUser.name}</span>. Para asegurar que todos participen de manera justa, se ha implementado una nueva regla:
+            </p>
+            <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4 mb-6 text-left">
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Si un partido finaliza y <strong>no cargaste ningún pronóstico</strong>, se te penalizará restando <strong>1 punto (-1)</strong> del acumulado general.
+              </p>
+              <p className="text-xs text-rose-500 font-bold mt-2">
+                ¡No te olvides de guardar tus pronósticos antes de cada partido!
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.setItem(`prode_seen_penalty_warning_${currentUser.id}`, "true");
+                setShowPenaltyModal(false);
+              }}
+              className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-rose-600/20 hover:shadow-rose-500/30 active:scale-95 cursor-pointer text-sm"
+            >
+              ¡Entendido, voy a pronosticar!
             </button>
           </div>
         </div>
