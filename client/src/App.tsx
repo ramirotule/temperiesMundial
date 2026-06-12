@@ -747,9 +747,9 @@ export default function App() {
           )}
           {currentUser && (
             <div className="flex items-center gap-2 bg-sky-500/10 dark:bg-sky-500/20 border border-sky-400/30 dark:border-sky-400/20 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-black text-sky-600 dark:text-sky-300 shadow-sm uppercase tracking-wider select-none hover:scale-105 transition-transform duration-200">
-              <span>🇦🇷</span>
+              <img src="https://flagcdn.com/w20/ar.png" className="w-4 h-3 object-cover rounded-xs border border-sky-400/30" alt="AR" />
               <span>¡Vamos Argentina!</span>
-              <span>🇦🇷</span>
+              <img src="https://flagcdn.com/w20/ar.png" className="w-4 h-3 object-cover rounded-xs border border-sky-400/30" alt="AR" />
             </div>
           )}
         </div>
@@ -815,7 +815,7 @@ export default function App() {
               >
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 border border-border-color rounded-2xl flex items-center justify-center mx-auto shadow-xl mb-4">
-                    <span className="text-3xl">🇦🇷</span>
+                    <img src="https://flagcdn.com/w40/ar.png" className="w-10 h-7 object-cover rounded-xs border border-border-color/30" alt="AR" />
                   </div>
                   <h2 className="text-2xl font-black tracking-tight text-text-primary">
                     Ingresá a tu Prode
@@ -1005,7 +1005,11 @@ export default function App() {
                     <span className="text-4xl sm:text-7xl font-extrabold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-white to-sky-400 drop-shadow-[0_5px_15px_rgba(56,189,248,0.6)]">
                       ¡VAMOS ARGENTINA!
                     </span>
-                    <span className="text-3xl sm:text-5xl mt-4">🎺 🇦🇷 🎺</span>
+                    <div className="flex items-center gap-3 sm:gap-5 mt-4">
+                      <span className="text-3xl sm:text-5xl">🎺</span>
+                      <img src="https://flagcdn.com/w80/ar.png" className="w-12 h-8 sm:w-16 sm:h-11 object-cover rounded-md shadow-lg border-2 border-white/20" alt="AR" />
+                      <span className="text-3xl sm:text-5xl">🎺</span>
+                    </div>
                   </div>
                 </>
               )}
@@ -1419,36 +1423,40 @@ export default function App() {
                             {/* Date/Time and Stadium info */}
                             <div className="text-xs text-text-muted font-medium flex items-start justify-between gap-2">
                               <div className="flex flex-col gap-1">
-                                <span className="font-bold text-text-secondary text-xs sm:text-sm">
-                                  🇦🇷{" "}
-                                  {new Date(match.date).toLocaleString(
-                                    "es-AR",
-                                    {
-                                      timeZone:
-                                        "America/Argentina/Buenos_Aires",
-                                      day: "numeric",
-                                      month: "short",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: false,
-                                    },
-                                  )}{" "}
-                                  hs
+                                <span className="font-bold text-text-secondary text-xs sm:text-sm flex items-center gap-1.5">
+                                  <img src="https://flagcdn.com/w20/ar.png" className="w-4 h-3 object-cover rounded-xs border border-slate-200/20 shadow-xs" alt="AR" />
+                                  <span>
+                                    {new Date(match.date).toLocaleString(
+                                      "es-AR",
+                                      {
+                                        timeZone:
+                                          "America/Argentina/Buenos_Aires",
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                      },
+                                    )}{" "}
+                                    hs
+                                  </span>
                                 </span>
-                                <span className="text-[10px] sm:text-xs text-text-muted">
-                                  🇪🇸{" "}
-                                  {new Date(match.date).toLocaleString(
-                                    "es-ES",
-                                    {
-                                      timeZone: "Europe/Madrid",
-                                      day: "numeric",
-                                      month: "short",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: false,
-                                    },
-                                  )}{" "}
-                                  hs
+                                <span className="text-[10px] sm:text-xs text-text-muted flex items-center gap-1.5">
+                                  <img src="https://flagcdn.com/w20/es.png" className="w-4 h-3 object-cover rounded-xs border border-slate-200/20 shadow-xs" alt="ES" />
+                                  <span>
+                                    {new Date(match.date).toLocaleString(
+                                      "es-ES",
+                                      {
+                                        timeZone: "Europe/Madrid",
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                      },
+                                    )}{" "}
+                                    hs
+                                  </span>
                                 </span>
                               </div>
                               <span className="truncate max-w-[120px] text-[10px] sm:text-xs self-start text-right">
