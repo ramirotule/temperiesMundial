@@ -13,6 +13,8 @@ import {
   Moon,
   BookOpen,
   Trophy,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
 import { TEAMS } from "./data/db";
@@ -243,90 +245,62 @@ function mapMatchStatus(match: Match): Match {
 
 const playTrumpetSound = () => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
-    // Notes frequencies
-    const G4 = 392.00;
-    const B4 = 493.88;
-    const C5 = 523.25;
-    const D5 = 587.33;
-    const E5 = 659.25;
-    const F5 = 698.46;
-    const G5 = 783.99;
-    const A5 = 880.00;
-
-    // Melody: "Vamos vamos Argentina, vamos vamos a ganar, que esta banda bochinchera, no te deja, no te deja de alentar"
-    const notes = [
-      // Vamos, vamos Argentina
-      G4, C5, E5, G5, E5, G5,
-      // Vamos, vamos a ganar
-      A5, F5, D5, F5, D5, B4, G4,
-      // Que esta banda bochinchera
-      C5, E5, G5, A5, G5, F5, E5, D5,
-      // No te deja, no te deja de alentar
-      D5, E5, F5, D5, F5, E5, D5, C5
-    ];
-
-    // Rhythm (start times)
-    const rhythm = [
-      // Vamos, vamos Argentina
-      0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
-      // Vamos, vamos a ganar
-      1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5,
-      // Que esta banda bochinchera
-      2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2,
-      // No te deja, no te deja de alentar
-      4.5, 4.7, 4.9, 5.1, 5.3, 5.5, 5.7, 5.9
-    ];
-
-    // Durations
-    const durations = [
-      // Vamos, vamos Argentina
-      0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
-      // Vamos, vamos a ganar
-      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
-      // Que esta banda bochinchera
-      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
-      // No te deja, no te deja de alentar
-      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.40
-    ];
-    
-    notes.forEach((freq, idx) => {
-      const startTime = ctx.currentTime + rhythm[idx];
-      const duration = durations[idx];
-      
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-      
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, startTime);
-      osc.detune.setValueAtTime(8, startTime);
-      
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1500, startTime);
-      filter.frequency.exponentialRampToValueAtTime(3200, startTime + 0.04);
-      filter.frequency.exponentialRampToValueAtTime(1200, startTime + duration);
-      
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(startTime);
-      osc.stop(startTime + duration);
-    });
+    const audio = new Audio("/vamos.mp3");
+    audio.volume = 0.5;
+    audio.play();
   } catch (e) {
-    console.error("Audio error", e);
+    console.error("Audio playback error", e);
   }
 };
 
 export default function App() {
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    const saved = localStorage.getItem("prode_audio_muted");
+    return saved ? saved === "true" : false; // Default to unmuted (false) so it tries to play
+  });
+
+  const backgroundAudio = useMemo(() => {
+    const audio = new Audio("/vamos.mp3");
+    audio.loop = true;
+    audio.volume = 0.35; // Soft volume
+    return audio;
+  }, []);
+
+  // Sync isMuted state with actual audio element
+  useEffect(() => {
+    localStorage.setItem("prode_audio_muted", isMuted ? "true" : "false");
+    if (isMuted) {
+      backgroundAudio.pause();
+    } else {
+      backgroundAudio.play().catch((err) => {
+        console.log("Autoplay blocked, waiting for user gesture.", err);
+      });
+    }
+  }, [isMuted, backgroundAudio]);
+
+  // Autoplay bypass: play on first user interaction if not muted
+  useEffect(() => {
+    const startAudioOnInteraction = () => {
+      if (!isMuted) {
+        backgroundAudio.play().catch(() => {});
+      }
+      // Clean up listeners after first interaction
+      window.removeEventListener("click", startAudioOnInteraction);
+      window.removeEventListener("keydown", startAudioOnInteraction);
+      window.removeEventListener("touchstart", startAudioOnInteraction);
+    };
+
+    window.addEventListener("click", startAudioOnInteraction);
+    window.addEventListener("keydown", startAudioOnInteraction);
+    window.addEventListener("touchstart", startAudioOnInteraction);
+
+    return () => {
+      window.removeEventListener("click", startAudioOnInteraction);
+      window.removeEventListener("keydown", startAudioOnInteraction);
+      window.removeEventListener("touchstart", startAudioOnInteraction);
+    };
+  }, [isMuted, backgroundAudio]);
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("prode_theme");
     if (saved) return saved === "dark";
@@ -833,6 +807,19 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Mute/Unmute Audio Toggle */}
+          <button
+            onClick={() => setIsMuted((prev) => !prev)}
+            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 border border-border-color rounded-xl text-text-secondary transition-colors cursor-pointer"
+            title={isMuted ? "Activar Sonido" : "Silenciar"}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-rose-500" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-sky-500 animate-pulse" />
+            )}
+          </button>
+
           {/* Light/Dark Toggle */}
           {currentUser && (
             <button
@@ -1072,12 +1059,12 @@ export default function App() {
                   <img
                     src="/maradona.png"
                     alt="Diego Maradona"
-                    className="fixed top-1/2 left-4 sm:left-8 md:left-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-slate-900/30 dark:bg-slate-950/40 backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-left-idol"
+                    className="fixed top-1/2 left-4 sm:left-8 md:left-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-[#75AADB] backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-left-idol"
                   />
                   <img
                     src="/messi.png"
                     alt="Lionel Messi"
-                    className="fixed top-1/2 right-4 sm:right-8 md:right-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-slate-900/30 dark:bg-slate-950/40 backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-right-idol"
+                    className="fixed top-1/2 right-4 sm:right-8 md:right-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-[#75AADB] backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-right-idol"
                   />
 
                   {/* Pulsing Argentina Banner */}
@@ -1279,6 +1266,7 @@ export default function App() {
                           setTeamSearch(val);
                           if (val.trim()) {
                             setShowTodayOnly(false);
+                            setGroupFilter("All");
                           }
                         }}
                         className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500 placeholder-text-muted/40 w-36 sm:w-44 transition-all"
