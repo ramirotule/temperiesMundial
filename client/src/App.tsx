@@ -1771,7 +1771,6 @@ export default function App() {
                                     <th className="py-2.5 px-1 text-center w-10">GC</th>
                                     <th className="py-2.5 px-2 text-center w-12">DG</th>
                                     <th className="py-2.5 px-2 text-center w-12 font-black text-indigo-500 dark:text-indigo-400">Pts</th>
-                                    <th className="py-2.5 px-2 text-center w-24">Estado</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1838,30 +1837,6 @@ export default function App() {
                                         {/* Pts */}
                                         <td className="py-3 px-2 text-center font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/5">
                                           {teamStanding.points}
-                                        </td>
-                                        
-                                        {/* Status badge */}
-                                        <td className="py-3 px-2 text-center">
-                                          {teamStanding.status === "qualified" && (
-                                            <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-                                              Clasificado
-                                            </span>
-                                          )}
-                                          {teamStanding.status === "eliminated" && (
-                                            <span className="bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-                                              Eliminado
-                                            </span>
-                                          )}
-                                          {teamStanding.status === "in_play" && (
-                                            <span className="bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-                                              En juego
-                                            </span>
-                                          )}
-                                          {teamStanding.status === "scheduled" && (
-                                            <span className="bg-slate-500/10 border border-slate-500/20 text-text-muted font-bold text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-                                              Pendiente
-                                            </span>
-                                          )}
                                         </td>
                                       </tr>
                                     );
