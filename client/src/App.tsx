@@ -247,10 +247,51 @@ const playTrumpetSound = () => {
     if (!AudioContext) return;
     const ctx = new AudioContext();
     
-    // Stadium horn chant: G4, C5, E5, G5, E5, G5
-    const notes = [392.00, 523.25, 659.25, 783.99, 659.25, 783.99];
-    const rhythm = [0, 0.12, 0.24, 0.36, 0.48, 0.60];
-    const durations = [0.10, 0.10, 0.10, 0.10, 0.10, 0.40];
+    // Notes frequencies
+    const G4 = 392.00;
+    const B4 = 493.88;
+    const C5 = 523.25;
+    const D5 = 587.33;
+    const E5 = 659.25;
+    const F5 = 698.46;
+    const G5 = 783.99;
+    const A5 = 880.00;
+
+    // Melody: "Vamos vamos Argentina, vamos vamos a ganar, que esta banda bochinchera, no te deja, no te deja de alentar"
+    const notes = [
+      // Vamos, vamos Argentina
+      G4, C5, E5, G5, E5, G5,
+      // Vamos, vamos a ganar
+      A5, F5, D5, F5, D5, B4, G4,
+      // Que esta banda bochinchera
+      C5, E5, G5, A5, G5, F5, E5, D5,
+      // No te deja, no te deja de alentar
+      D5, E5, F5, D5, F5, E5, D5, C5
+    ];
+
+    // Rhythm (start times)
+    const rhythm = [
+      // Vamos, vamos Argentina
+      0.0, 0.2, 0.4, 0.6, 0.8, 1.0,
+      // Vamos, vamos a ganar
+      1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5,
+      // Que esta banda bochinchera
+      2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2,
+      // No te deja, no te deja de alentar
+      4.5, 4.7, 4.9, 5.1, 5.3, 5.5, 5.7, 5.9
+    ];
+
+    // Durations
+    const durations = [
+      // Vamos, vamos Argentina
+      0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
+      // Vamos, vamos a ganar
+      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
+      // Que esta banda bochinchera
+      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25,
+      // No te deja, no te deja de alentar
+      0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.40
+    ];
     
     notes.forEach((freq, idx) => {
       const startTime = ctx.currentTime + rhythm[idx];
@@ -265,13 +306,13 @@ const playTrumpetSound = () => {
       osc.detune.setValueAtTime(8, startTime);
       
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1200, startTime);
-      filter.frequency.exponentialRampToValueAtTime(3500, startTime + 0.05);
-      filter.frequency.exponentialRampToValueAtTime(1000, startTime + duration);
+      filter.frequency.setValueAtTime(1500, startTime);
+      filter.frequency.exponentialRampToValueAtTime(3200, startTime + 0.04);
+      filter.frequency.exponentialRampToValueAtTime(1200, startTime + duration);
       
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.18, startTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      gain.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
       
       osc.connect(filter);
       filter.connect(gain);
@@ -889,14 +930,14 @@ export default function App() {
                     {isUserDropdownOpen && (
                       <div
                         className="absolute z-50 left-0 right-0 mt-2 border border-slate-400/30 rounded-2xl shadow-2xl p-3 space-y-2 max-h-[160px] overflow-y-auto animate-fade-in backdrop-blur-xl"
-                        style={{ backgroundColor: "#CED1D3" }}
+                        style={{ backgroundColor: "#ffffff" }}
                       >
                         <input
                           type="text"
                           placeholder="Buscar tu nombre..."
                           value={userSearchQuery}
                           onChange={(e) => setUserSearchQuery(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
                         />
@@ -917,7 +958,7 @@ export default function App() {
                                 className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-between ${
                                   selectedUserId === user.id
                                     ? "bg-indigo-600 text-white font-bold"
-                                    : "text-slate-900 hover:bg-white/40 hover:text-black font-semibold"
+                                    : "text-slate-900 hover:bg-slate-100 hover:text-black font-semibold"
                                 }`}
                               >
                                 <span>
@@ -984,7 +1025,10 @@ export default function App() {
               >
                 {/* Clickable zone for the eye logo mark at the top center of the background image */}
                 <button
-                  onClick={() => setShowLoginForm(true)}
+                  onClick={() => {
+                    setShowLoginForm(true);
+                    playTrumpetSound();
+                  }}
                   onMouseEnter={() => {
                     setIsHoveringLoginLogo(true);
                     playTrumpetSound();
@@ -1028,12 +1072,12 @@ export default function App() {
                   <img
                     src="/maradona.png"
                     alt="Diego Maradona"
-                    className="fixed top-1/2 left-4 sm:left-8 md:left-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-cover border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-left-idol"
+                    className="fixed top-1/2 left-4 sm:left-8 md:left-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-slate-900/30 dark:bg-slate-950/40 backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-left-idol"
                   />
                   <img
                     src="/messi.png"
                     alt="Lionel Messi"
-                    className="fixed top-1/2 right-4 sm:right-8 md:right-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-cover border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-right-idol"
+                    className="fixed top-1/2 right-4 sm:right-8 md:right-16 w-[180px] h-[180px] sm:w-[280px] sm:h-[280px] md:w-[380px] md:h-[380px] rounded-full object-contain bg-slate-900/30 dark:bg-slate-950/40 backdrop-blur-xs border-4 border-sky-400/40 shadow-[0_0_30px_rgba(56,189,248,0.3)] pointer-events-none z-40 animate-slide-right-idol"
                   />
 
                   {/* Pulsing Argentina Banner */}
@@ -1180,7 +1224,10 @@ export default function App() {
                       <select
                         className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
                         value={groupFilter}
-                        onChange={(e) => setGroupFilter(e.target.value)}
+                        onChange={(e) => {
+                          setGroupFilter(e.target.value);
+                          setTeamSearch("");
+                        }}
                       >
                         <option value="All">Todos los Grupos</option>
                         {[
@@ -1227,7 +1274,13 @@ export default function App() {
                         type="text"
                         placeholder="Ej: Argentina..."
                         value={teamSearch}
-                        onChange={(e) => setTeamSearch(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTeamSearch(val);
+                          if (val.trim()) {
+                            setShowTodayOnly(false);
+                          }
+                        }}
                         className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500 placeholder-text-muted/40 w-36 sm:w-44 transition-all"
                       />
                     </div>
