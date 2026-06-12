@@ -1211,8 +1211,8 @@ export default function App() {
                     onClick={() => setShowTodayOnly((prev) => !prev)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
                       showTodayOnly
-                        ? "bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5"
-                        : "bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800"
+                        ? "bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white"
+                        : "bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                     }`}
                   >
                     📅 Partidos de Hoy
