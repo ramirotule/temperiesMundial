@@ -843,13 +843,16 @@ export default function App() {
                     </button>
 
                     {isUserDropdownOpen && (
-                      <div className="absolute z-50 left-0 right-0 mt-2 bg-slate-900/95 dark:bg-slate-950/95 border border-border-color rounded-2xl shadow-2xl p-3 space-y-2 max-h-60 overflow-y-auto animate-fade-in backdrop-blur-xl">
+                      <div
+                        className="absolute z-50 left-0 right-0 mt-2 border border-slate-400/30 rounded-2xl shadow-2xl p-3 space-y-2 max-h-[160px] overflow-y-auto animate-fade-in backdrop-blur-xl"
+                        style={{ backgroundColor: "#CED1D3" }}
+                      >
                         <input
                           type="text"
                           placeholder="Buscar tu nombre..."
                           value={userSearchQuery}
                           onChange={(e) => setUserSearchQuery(e.target.value)}
-                          className="w-full bg-slate-950 border border-border-color rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
                         />
@@ -870,7 +873,7 @@ export default function App() {
                                 className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-between ${
                                   selectedUserId === user.id
                                     ? "bg-indigo-600 text-white font-bold"
-                                    : "text-text-secondary hover:bg-slate-800/80 hover:text-white"
+                                    : "text-slate-900 hover:bg-white/40 hover:text-black font-semibold"
                                 }`}
                               >
                                 <span>
@@ -882,7 +885,7 @@ export default function App() {
                           {users.filter((user) =>
                             user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
                           ).length === 0 && (
-                            <p className="text-[10px] text-text-muted text-center py-2">
+                            <p className="text-[10px] text-slate-700 text-center py-2 font-medium">
                               No se encontraron empleados
                             </p>
                           )}
