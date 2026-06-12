@@ -214,7 +214,7 @@ export const EMPLOYEES = [
   'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
   'Rocio Smidt', 'Alejandro Morreale', 'Daiana Amarante', 'Leandro Saraceno', 'Franco Flores',
   'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
-  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito', 'Florencia Belsito'
+  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito', 'Florencia Belsito', 'Ailen Fleites'
 ];
 
 export const PASSWORD_MAP: Record<string, string> = {
@@ -242,7 +242,8 @@ export const PASSWORD_MAP: Record<string, string> = {
   'Conrado Blanco': 'con.426',
   'Dolores Bruzzone': 'dol.824',
   'Julieta Belsito': 'jul.375',
-  'Florencia Belsito': 'flo.849'
+  'Florencia Belsito': 'flo.849',
+  'Ailen Fleites': 'ail.716'
 };
 
 export const MOCK_USERS: User[] = [
