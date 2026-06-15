@@ -329,7 +329,29 @@ app.post('/api/admin/reset-matches', async (req, res) => {
     res.status(500).json({ error: 'Error al restablecer partidos.' });
   }
 });
+// 10. Admin: Download Database Backup
+app.get('/api/admin/backup', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany();
+    const matches = await prisma.match.findMany();
+    const predictions = await prisma.prediction.findMany();
 
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      data: {
+        users,
+        matches,
+        predictions
+      }
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="temperies_backup_${Date.now()}.json"`);
+    res.send(JSON.stringify(backupData, null, 2));
+  } catch (error) {
+    res.status(500).json({ error: 'Error al generar el backup.' });
+  }
+});
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

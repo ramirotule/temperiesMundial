@@ -660,6 +660,26 @@ export default function App() {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/backup`);
+      if (!res.ok) {
+        throw new Error("Error al generar backup");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `temperies_backup_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      setErrorModalMsg("Error de conexión al descargar backup.");
+    }
+  };
+
   const handleResetMatches = async () => {
     if (!window.confirm("¿Estás seguro de que querés restablecer todos los partidos a pendientes sin goles?")) return;
     try {
@@ -2334,6 +2354,13 @@ export default function App() {
                       title="Restablece los marcadores reales de los partidos a pendientes sin goles cargados."
                     >
                       Restablecer Partidos Reales (Poner todos a Pendiente)
+                    </button>
+                    <button
+                      onClick={handleDownloadBackup}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all active:scale-98 cursor-pointer shadow-md"
+                      title="Descargar copia de seguridad en formato JSON de usuarios, partidos y pronósticos."
+                    >
+                      Descargar Backup JSON
                     </button>
                   </div>
                 </div>
