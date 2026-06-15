@@ -2854,40 +2854,128 @@ export default function App() {
                     const homeTeam = TEAMS.find(t => t.code === match.homeTeam);
                     const awayTeam = TEAMS.find(t => t.code === match.awayTeam);
                     return (
-                      <div key={match.id} className="bg-bg-card border border-border-color rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-4 w-full md:w-auto flex-1">
-                          <div className="flex flex-col items-end w-24">
-                            <span className="text-sm font-bold text-text-primary text-right">{homeTeam?.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-input rounded-lg border border-border-color">
-                            <span className="font-bold w-4 text-center text-text-primary">{match.homeScore !== null ? match.homeScore : "-"}</span>
-                            <span className="text-text-muted text-xs">vs</span>
-                            <span className="font-bold w-4 text-center text-text-primary">{match.awayScore !== null ? match.awayScore : "-"}</span>
-                          </div>
-                          <div className="flex flex-col items-start w-24">
-                            <span className="text-sm font-bold text-text-primary text-left">{awayTeam?.name}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 shrink-0 bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                          <div className="text-center min-w-[70px]">
-                            <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
-                            {pred ? (
-                              <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                                {pred.homeScore} - {pred.awayScore}
+                      <div key={match.id} className="bg-bg-card border border-border-color rounded-2xl p-4 flex flex-col items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex flex-col md:flex-row items-center justify-between w-full gap-4">
+                          <div className="flex flex-col flex-1 items-center md:items-start w-full">
+                            <div className="flex items-center justify-center md:justify-start gap-4 w-full">
+                              <div className="flex flex-col items-end w-24">
+                                <span className="text-sm font-bold text-text-primary text-right">{homeTeam?.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-input rounded-lg border border-border-color shrink-0">
+                                <span className="font-bold w-4 text-center text-text-primary">{match.homeScore !== null ? match.homeScore : "-"}</span>
+                                <span className="text-text-muted text-xs">vs</span>
+                                <span className="font-bold w-4 text-center text-text-primary">{match.awayScore !== null ? match.awayScore : "-"}</span>
+                              </div>
+                              <div className="flex flex-col items-start w-24">
+                                <span className="text-sm font-bold text-text-primary text-left">{awayTeam?.name}</span>
+                              </div>
+                            </div>
+                            {/* Fecha y cuenta regresiva */}
+                            <div className="mt-2 text-center md:text-left w-full flex flex-col items-center md:items-center">
+                              <span className="text-xs text-text-muted font-medium flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(match.date).toLocaleString("es-AR", {
+                                  timeZone: "America/Argentina/Buenos_Aires",
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })} hs
                               </span>
+                              {match.status === "scheduled" && (
+                                <span className="text-[10px] font-bold text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md mt-1 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {(() => {
+                                    const diff = new Date(match.date).getTime() - new Date().getTime();
+                                    if (diff <= 0) return "En juego";
+                                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                                    if (days > 0) return `Faltan ${days} d ${hours} hs`;
+                                    const mins = Math.floor((diff / (1000 * 60)) % 60);
+                                    if (hours > 0) return `Faltan ${hours} hs ${mins} min`;
+                                    return `Faltan ${mins} minutos`;
+                                  })()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col md:flex-row items-center gap-4 shrink-0 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50 w-full md:w-auto justify-center">
+                            {match.status === "scheduled" ? (
+                              <div className="flex flex-col items-center gap-2">
+                                <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    className="w-12 h-10 text-center bg-bg-input border border-border-color rounded-xl text-lg font-black focus:ring-2 focus:ring-indigo-500 transition-all text-text-primary"
+                                    value={predEdits[match.id]?.homeScore ?? pred?.homeScore ?? ""}
+                                    onChange={(e) =>
+                                      setPredEdits((prev) => ({
+                                        ...prev,
+                                        [match.id]: {
+                                          ...prev[match.id],
+                                          homeScore: e.target.value,
+                                          awayScore: prev[match.id]?.awayScore ?? pred?.awayScore?.toString() ?? "",
+                                        },
+                                      }))
+                                    }
+                                  />
+                                  <span className="text-text-muted font-black">-</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    className="w-12 h-10 text-center bg-bg-input border border-border-color rounded-xl text-lg font-black focus:ring-2 focus:ring-indigo-500 transition-all text-text-primary"
+                                    value={predEdits[match.id]?.awayScore ?? pred?.awayScore ?? ""}
+                                    onChange={(e) =>
+                                      setPredEdits((prev) => ({
+                                        ...prev,
+                                        [match.id]: {
+                                          ...prev[match.id],
+                                          awayScore: e.target.value,
+                                          homeScore: prev[match.id]?.homeScore ?? pred?.homeScore?.toString() ?? "",
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => savePrediction(match.id)}
+                                  disabled={
+                                    !predEdits[match.id]?.homeScore ||
+                                    !predEdits[match.id]?.awayScore
+                                  }
+                                  className="w-full py-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 dark:disabled:bg-slate-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer disabled:cursor-not-allowed"
+                                >
+                                  <Save className="w-3 h-3" /> Guardar
+                                </button>
+                              </div>
                             ) : (
-                              <span className="text-xs font-semibold text-rose-500">Pendiente</span>
+                              <>
+                                <div className="text-center min-w-[70px]">
+                                  <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
+                                  {pred ? (
+                                    <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                      {pred.homeScore} - {pred.awayScore}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-rose-500">Pendiente</span>
+                                  )}
+                                </div>
+                                {activeStatModal !== "pronosticados" && (
+                                  <div className="text-center pl-4 border-l border-slate-300 dark:border-slate-600 min-w-[60px]">
+                                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Puntos</span>
+                                    <span className={`font-black text-lg ${points === 5 ? "text-amber-500" : points === 3 ? "text-indigo-500" : points === 2 ? "text-teal-500" : "text-text-muted"}`}>
+                                      +{points}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
-                          {activeStatModal !== "pronosticados" && (
-                            <div className="text-center pl-4 border-l border-slate-300 dark:border-slate-600 min-w-[60px]">
-                              <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Puntos</span>
-                              <span className={`font-black text-lg ${points === 5 ? "text-amber-500" : points === 3 ? "text-indigo-500" : points === 2 ? "text-teal-500" : "text-text-muted"}`}>
-                                +{points}
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
