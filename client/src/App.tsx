@@ -2842,12 +2842,12 @@ export default function App() {
               </h3>
               <button
                 onClick={() => setActiveStatModal(null)}
-                className="text-text-muted hover:text-text-primary p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="text-text-muted hover:text-text-primary p-2 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-900/50 flex-1">
+            <div className="overflow-y-auto p-4 md:p-6 bg-bg-primary flex-1">
               <div className="space-y-3">
                 {statMatches && statMatches.length > 0 ? (
                   statMatches.map(({ match, pred, points }) => {
@@ -2901,7 +2901,7 @@ export default function App() {
                             </div>
                           </div>
                           
-                          <div className="flex flex-col md:flex-row items-center gap-4 shrink-0 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50 w-full md:w-auto justify-center">
+                          <div className="flex flex-col md:flex-row items-center gap-4 shrink-0 bg-bg-primary p-3 rounded-xl border border-border-color w-full md:w-auto justify-center">
                             {match.status === "scheduled" ? (
                               <div className="flex flex-col items-center gap-2">
                                 <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
@@ -2948,7 +2948,7 @@ export default function App() {
                                     !predEdits[match.id]?.homeScore ||
                                     !predEdits[match.id]?.awayScore
                                   }
-                                  className="w-full py-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 dark:disabled:bg-slate-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer disabled:cursor-not-allowed"
+                                  className="w-full py-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer disabled:cursor-not-allowed"
                                 >
                                   <Save className="w-3 h-3" /> Guardar
                                 </button>
@@ -2958,7 +2958,7 @@ export default function App() {
                                 <div className="text-center min-w-[70px]">
                                   <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
                                   {pred ? (
-                                    <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                    <span className="font-mono text-sm font-bold text-indigo-500">
                                       {pred.homeScore} - {pred.awayScore}
                                     </span>
                                   ) : (
@@ -2966,7 +2966,7 @@ export default function App() {
                                   )}
                                 </div>
                                 {activeStatModal !== "pronosticados" && (
-                                  <div className="text-center pl-4 border-l border-slate-300 dark:border-slate-600 min-w-[60px]">
+                                  <div className="text-center pl-4 border-l border-border-color min-w-[60px]">
                                     <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Puntos</span>
                                     <span className={`font-black text-lg ${points === 5 ? "text-amber-500" : points === 3 ? "text-indigo-500" : points === 2 ? "text-teal-500" : "text-text-muted"}`}>
                                       +{points}
