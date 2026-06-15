@@ -933,7 +933,13 @@ export default function App() {
                 <span className="text-xs text-text-muted font-mono">
                   {currentUser.role === "admin"
                     ? "Administrador"
-                    : `${currentUserStats?.points || 0} pts`}
+                    : (
+                      <span>
+                        <span className="font-bold text-indigo-500 dark:text-indigo-400">Pos {leaderboard.findIndex((l) => l.user.id === currentUser?.id) + 1}</span>
+                        <span className="mx-1.5 opacity-50">|</span>
+                        {currentUserStats?.points || 0} pts
+                      </span>
+                    )}
                 </span>
               </div>
 
