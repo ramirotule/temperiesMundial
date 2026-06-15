@@ -507,6 +507,10 @@ export default function App() {
         let points = (exactMatches * 5) + (diffMatches * 3) + (outcomeMatches * 2);
 
         matches.forEach((match) => {
+          const matchDate = new Date(match.date);
+          const isJune15 = matchDate >= new Date("2026-06-15T00:00:00-03:00") && matchDate < new Date("2026-06-16T00:00:00-03:00");
+          if (isJune15) return;
+
           if (match.status === "finished") {
             const pred = userPredictions[match.id];
             if (pred && pred.homeScore !== null && pred.awayScore !== null) {
@@ -578,6 +582,11 @@ export default function App() {
         let predictionsCount = (exactMatches + diffMatches + outcomeMatches); // Optional: give them their past matches as predictionsCount base
 
         matches.forEach((match) => {
+          // Ignore matches played on June 15 due to DB wipe and holiday
+          const matchDate = new Date(match.date);
+          const isJune15 = matchDate >= new Date("2026-06-15T00:00:00-03:00") && matchDate < new Date("2026-06-16T00:00:00-03:00");
+          if (isJune15) return;
+
           const pred = userPredictions[match.id];
           if (pred) {
             predictionsCount++;
@@ -1176,13 +1185,15 @@ export default function App() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                    Aviso Importante: Reseteo de Base de Datos
+                    Aviso Importante: Recuperación de Datos
                   </h3>
                   <div className="mt-1 text-xs text-amber-800 dark:text-amber-200/80 leading-relaxed">
                     <p>
-                      Debido a una falla técnica en la base de datos se borraron los pronósticos.
-                      Por favor, <strong>vuelvan a cargar sus predicciones para los próximos partidos</strong>. 
-                      Si recuerdan su puntaje exacto, avísenle por WhatsApp a Ramiro (+54 9 2954 82-4618) para que lo ajuste manualmente. ¡Gracias por la paciencia!
+                      El día 15 de Junio surgió un problema en la base de datos por el cual se perdieron los pronósticos pasados y futuros. <strong>¡Por suerte, la tabla de posiciones se pudo recuperar con éxito!</strong>
+                      <br/><br/>
+                      <strong>Aviso sobre los partidos de hoy:</strong> Los pronósticos de los partidos del día 15 de Junio <strong>no serán tenidos en cuenta</strong> para el puntaje (considerando que es feriado y no todos están atentos). Retomaremos los cálculos y las predicciones con normalidad a partir de mañana, martes 16 de Junio.
+                      <br/><br/>
+                      Como medida de seguridad, ahora tenés disponible una opción de <strong>Auto-Backup</strong> (ícono de disquete 💾) arriba a la derecha, al lado de tu nombre de usuario. ¡Te recomendamos usarla para guardar tu progreso!
                     </p>
                   </div>
                 </div>
