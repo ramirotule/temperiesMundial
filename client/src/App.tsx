@@ -2239,11 +2239,11 @@ export default function App() {
                                   </div>
                                   <div>
                                     <span
-                                      className={`text-sm font-bold block ${isCurrentUser ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
+                                      className={`text-sm font-bold block ${isCurrentUser ? "text-indigo-600 dark:text-indigo-400" : "text-slate-800 dark:text-slate-100"}`}
                                     >
                                       {row.user.name}
                                     </span>
-                                    <span className="text-[10px] text-slate-500 font-mono">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                                       @{row.user.username}
                                     </span>
                                   </div>
