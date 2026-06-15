@@ -93,97 +93,123 @@ function generateMatches() {
     const groupTeams = TEAMS.filter(t => t.group === groupChar);
     if (groupTeams.length < 4) return;
     
-    const pairings = [
-      { home: groupTeams[0], away: groupTeams[1], round: 1 },
-      { home: groupTeams[2], away: groupTeams[3], round: 1 },
-      { home: groupTeams[0], away: groupTeams[2], round: 2 },
-      { home: groupTeams[1], away: groupTeams[3], round: 2 },
-      { home: groupTeams[0], away: groupTeams[3], round: 3 },
-      { home: groupTeams[1], away: groupTeams[2], round: 3 },
+    const FIXTURE_DATA = [
+      // GRUPO A
+      { group: 'A', home: 'mx', away: 'kr', day: 11, hour: 16 },
+      { group: 'A', home: 'za', away: 'cz', day: 11, hour: 23 },
+      { group: 'A', home: 'cz', away: 'mx', day: 18, hour: 13 },
+      { group: 'A', home: 'za', away: 'kr', day: 18, hour: 22 },
+      { group: 'A', home: 'cz', away: 'kr', day: 24, hour: 22 },
+      { group: 'A', home: 'mx', away: 'za', day: 24, hour: 22 },
+
+      // GRUPO B
+      { group: 'B', home: 'ca', away: 'qa', day: 12, hour: 16 },
+      { group: 'B', home: 'ch', away: 'ba', day: 13, hour: 16 },
+      { group: 'B', home: 'ca', away: 'ch', day: 18, hour: 16 },
+      { group: 'B', home: 'ba', away: 'qa', day: 18, hour: 19 },
+      { group: 'B', home: 'ch', away: 'qa', day: 24, hour: 16 },
+      { group: 'B', home: 'ba', away: 'ca', day: 24, hour: 16 },
+
+      // GRUPO C
+      { group: 'C', home: 'br', away: 'ht', day: 13, hour: 19 },
+      { group: 'C', home: 'gb-sct', away: 'ma', day: 13, hour: 22 },
+      { group: 'C', home: 'gb-sct', away: 'br', day: 19, hour: 19 },
+      { group: 'C', home: 'ht', away: 'ma', day: 19, hour: 22 },
+      { group: 'C', home: 'br', away: 'ma', day: 24, hour: 19 },
+      { group: 'C', home: 'gb-sct', away: 'ht', day: 24, hour: 19 },
+
+      // GRUPO D
+      { group: 'D', home: 'us', away: 'au', day: 12, hour: 22 },
+      { group: 'D', home: 'tr', away: 'py', day: 14, hour: 1 },
+      { group: 'D', home: 'tr', away: 'us', day: 19, hour: 16 },
+      { group: 'D', home: 'py', away: 'au', day: 20, hour: 0 },
+      { group: 'D', home: 'py', away: 'us', day: 25, hour: 23 },
+      { group: 'D', home: 'tr', away: 'au', day: 25, hour: 23 },
+
+      // GRUPO E
+      { group: 'E', home: 'de', away: 'ci', day: 14, hour: 14 },
+      { group: 'E', home: 'ec', away: 'cw', day: 14, hour: 20 },
+      { group: 'E', home: 'de', away: 'ec', day: 20, hour: 17 },
+      { group: 'E', home: 'cw', away: 'ci', day: 20, hour: 21 },
+      { group: 'E', home: 'cw', away: 'de', day: 25, hour: 17 },
+      { group: 'E', home: 'ec', away: 'ci', day: 25, hour: 17 },
+
+      // GRUPO F
+      { group: 'F', home: 'nl', away: 'se', day: 14, hour: 17 },
+      { group: 'F', home: 'tn', away: 'jp', day: 14, hour: 23 },
+      { group: 'F', home: 'nl', away: 'tn', day: 20, hour: 14 },
+      { group: 'F', home: 'jp', away: 'se', day: 21, hour: 1 },
+      { group: 'F', home: 'jp', away: 'nl', day: 25, hour: 20 },
+      { group: 'F', home: 'tn', away: 'se', day: 25, hour: 20 },
+
+      // GRUPO G
+      { group: 'G', home: 'be', away: 'ir', day: 15, hour: 16 },
+      { group: 'G', home: 'nz', away: 'eg', day: 15, hour: 22 },
+      { group: 'G', home: 'be', away: 'nz', day: 21, hour: 16 },
+      { group: 'G', home: 'eg', away: 'ir', day: 21, hour: 22 },
+      { group: 'G', home: 'eg', away: 'be', day: 27, hour: 0 },
+      { group: 'G', home: 'nz', away: 'ir', day: 27, hour: 0 },
+
+      // GRUPO H
+      { group: 'H', home: 'es', away: 'sa', day: 15, hour: 13 },
+      { group: 'H', home: 'uy', away: 'cv', day: 15, hour: 19 },
+      { group: 'H', home: 'es', away: 'uy', day: 21, hour: 13 },
+      { group: 'H', home: 'cv', away: 'sa', day: 21, hour: 19 },
+      { group: 'H', home: 'sa', away: 'uy', day: 26, hour: 21 },
+      { group: 'H', home: 'cv', away: 'es', day: 26, hour: 21 },
+
+      // GRUPO I
+      { group: 'I', home: 'fr', away: 'iq', day: 16, hour: 16 },
+      { group: 'I', home: 'no', away: 'sn', day: 16, hour: 19 },
+      { group: 'I', home: 'fr', away: 'no', day: 22, hour: 18 },
+      { group: 'I', home: 'sn', away: 'iq', day: 22, hour: 21 },
+      { group: 'I', home: 'sn', away: 'fr', day: 26, hour: 16 },
+      { group: 'I', home: 'no', away: 'iq', day: 26, hour: 16 },
+
+      // GRUPO J
+      { group: 'J', home: 'ar', away: 'at', day: 16, hour: 22 },
+      { group: 'J', home: 'jo', away: 'dz', day: 17, hour: 1 },
+      { group: 'J', home: 'ar', away: 'jo', day: 23, hour: 14 },
+      { group: 'J', home: 'dz', away: 'at', day: 23, hour: 0 },
+      { group: 'J', home: 'dz', away: 'ar', day: 27, hour: 23 },
+      { group: 'J', home: 'jo', away: 'at', day: 27, hour: 23 },
+
+      // GRUPO K
+      { group: 'K', home: 'pt', away: 'uz', day: 17, hour: 14 },
+      { group: 'K', home: 'cd', away: 'co', day: 17, hour: 23 },
+      { group: 'K', home: 'pt', away: 'cd', day: 23, hour: 14 },
+      { group: 'K', home: 'co', away: 'uz', day: 23, hour: 23 },
+      { group: 'K', home: 'co', away: 'pt', day: 27, hour: 20, min: 30 },
+      { group: 'K', home: 'cd', away: 'uz', day: 27, hour: 20, min: 30 },
+
+      // GRUPO L
+      { group: 'L', home: 'gb-eng', away: 'gh', day: 17, hour: 17 },
+      { group: 'L', home: 'pa', away: 'hr', day: 17, hour: 20 },
+      { group: 'L', home: 'gb-eng', away: 'pa', day: 23, hour: 17 },
+      { group: 'L', home: 'hr', away: 'gh', day: 23, hour: 20 },
+      { group: 'L', home: 'hr', away: 'gb-eng', day: 27, hour: 18 },
+      { group: 'L', home: 'pa', away: 'gh', day: 27, hour: 18 },
     ];
-    
-    pairings.forEach((pair, idx) => {
-      const groupIdx = groups.indexOf(groupChar);
-      const isSecondHalf = groupIdx >= 6;
-      const baseGroupIdx = isSecondHalf ? groupIdx - 6 : groupIdx;
-      const dayOffset = isSecondHalf ? 4 : 0;
 
-      let day = 11;
-      let hour = 12;
+    const groupMatches = FIXTURE_DATA.filter(m => m.group === groupChar);
 
-      if (baseGroupIdx === 0) { // Group A / G
-        if (idx === 0) { day = 11; hour = 16; }
-        else if (idx === 1) { day = 11; hour = 23; }
-        else if (idx === 2) { day = 18; hour = 22; }
-        else if (idx === 3) { day = 18; hour = 13; }
-        else if (idx === 4) { day = 24; hour = 22; }
-        else if (idx === 5) { day = 24; hour = 22; }
-      }
-      else if (baseGroupIdx === 1) { // Group B / H
-        if (idx === 0) { day = 12; hour = 16; }
-        else if (idx === 1) { day = 13; hour = 16; }
-        else if (idx === 2) { day = 18; hour = 19; }
-        else if (idx === 3) { day = 18; hour = 16; }
-        else if (idx === 4) { day = 24; hour = 16; }
-        else if (idx === 5) { day = 24; hour = 16; }
-      }
-      else if (baseGroupIdx === 2) { // Group C / I
-        if (idx === 0) { day = 13; hour = 19; }
-        else if (idx === 1) { day = 13; hour = 22; }
-        else if (idx === 2) { day = 19; hour = 22; }
-        else if (idx === 3) { day = 19; hour = 19; }
-        else if (idx === 4) { day = 24; hour = 19; }
-        else if (idx === 5) { day = 24; hour = 19; }
-      }
-      else if (baseGroupIdx === 3) { // Group D / J
-        if (idx === 0) { day = 12; hour = 22; }
-        else if (idx === 1) { day = 14; hour = 1; }
-        else if (idx === 2) { day = 19; hour = 16; }
-        else if (idx === 3) { day = 20; hour = 0; }
-        else if (idx === 4) { day = 25; hour = 23; }
-        else if (idx === 5) { day = 25; hour = 23; }
-      }
-      else if (baseGroupIdx === 4) { // Group E / K
-        if (idx === 0) { day = 14; hour = 14; }
-        else if (idx === 1) { day = 14; hour = 20; }
-        else if (idx === 2) { day = 20; hour = 17; }
-        else if (idx === 3) { day = 20; hour = 21; }
-        else if (idx === 4) { day = 25; hour = 17; }
-        else if (idx === 5) { day = 25; hour = 17; }
-      }
-      else if (baseGroupIdx === 5) { // Group F / L
-        if (idx === 0) { day = 14; hour = 17; }
-        else if (idx === 1) { day = 14; hour = 23; }
-        else if (idx === 2) { day = 20; hour = 14; }
-        else if (idx === 3) { day = 21; hour = 1; }
-        else if (idx === 4) { day = 25; hour = 20; }
-        else if (idx === 5) { day = 25; hour = 20; }
-      }
-      
-      const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
-      const hourUTC = hour + 3;
-      let matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
+    groupMatches.forEach((m) => {
+      const stadium = STADIUMS[Math.abs(hashString(m.home + m.away)) % STADIUMS.length];
+      const hourUTC = m.hour + 3;
+      const minUTC = m.min || 0;
+      const matchDate = new Date(Date.UTC(2026, 5, m.day, hourUTC, minUTC, 0));
 
-      if (pair.home.code === 'es' && pair.away.code === 'cv') {
-        matchDate = new Date(Date.UTC(2026, 5, 15, 16, 0, 0));
-      }
-      
-      let status = 'scheduled';
-      let homeScore = null;
-      let awayScore = null;
-      
       matches.push({
         id: `M${matchIndex.toString().padStart(2, '0')}`,
-        homeTeam: pair.home.code,
-        awayTeam: pair.away.code,
+        homeTeam: m.home,
+        awayTeam: m.away,
         date: matchDate,
         group: groupChar,
-        homeScore,
-        awayScore,
+        homeScore: null,
+        awayScore: null,
         stadium,
-        status,
+        status: 'scheduled',
       });
-      
       matchIndex++;
     });
   });
