@@ -15,6 +15,8 @@ import {
   Trophy,
   Medal,
   Award,
+  BarChart2,
+  X,
 } from "lucide-react";
 import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
 import { TEAMS } from "./data/db";
@@ -383,6 +385,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<
     "matches" | "leaderboard" | "rules" | "groupStandings" | "admin"
   >("matches");
+
+  type StatModalType = "puntos" | "exacto" | "diferencia" | "resultado" | "pronosticados" | null;
+  const [activeStatModal, setActiveStatModal] = useState<StatModalType>(null);
 
   // Filters for matches
   const [groupFilter, setGroupFilter] = useState<string>("All");
@@ -849,6 +854,55 @@ export default function App() {
   };
 
 
+  const statMatches = useMemo(() => {
+    if (!currentUser || !activeStatModal) return null;
+    const userPredictions = predictions[currentUser.id] || {};
+    
+    let list: Array<{ match: Match; pred: Prediction | null; points: number }> = [];
+    
+    matches.forEach(match => {
+      const pred = userPredictions[match.id];
+      const matchDate = new Date(match.date);
+      const isJune15 = matchDate >= new Date("2026-06-15T00:00:00-03:00") && matchDate < new Date("2026-06-16T00:00:00-03:00");
+      
+      if (pred) {
+        if (activeStatModal === "pronosticados") {
+          list.push({ match, pred, points: 0 });
+        } else if (match.status === "finished" && !isJune15 && match.homeScore !== null && match.awayScore !== null) {
+          const res = calculatePoints(match, pred);
+          if (activeStatModal === "puntos" && res.points > 0) {
+            list.push({ match, pred, points: res.points });
+          } else if (activeStatModal === "exacto" && res.type === "exact") {
+            list.push({ match, pred, points: res.points });
+          } else if (activeStatModal === "diferencia" && res.type === "diff") {
+            list.push({ match, pred, points: res.points });
+          } else if (activeStatModal === "resultado" && res.type === "outcome") {
+            list.push({ match, pred, points: res.points });
+          }
+        }
+      } else {
+        if (activeStatModal === "pronosticados" && match.status !== "finished" && !isJune15) {
+          list.push({ match, pred: null, points: 0 });
+        }
+      }
+    });
+
+    if (activeStatModal === "pronosticados") {
+      list.sort((a, b) => {
+        if (!a.pred && b.pred) return -1;
+        if (a.pred && !b.pred) return 1;
+        return new Date(a.match.date).getTime() - new Date(b.match.date).getTime();
+      });
+    } else {
+      list.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return new Date(a.match.date).getTime() - new Date(b.match.date).getTime();
+      });
+    }
+
+    return list;
+  }, [currentUser, activeStatModal, matches, predictions]);
+
   return (
     <div
       className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans select-none pb-12 transition-colors duration-200"
@@ -1218,15 +1272,15 @@ export default function App() {
             {/* Stats Dashboard Mini Banner */}
             {currentUser.role !== "admin" && currentUserStats && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className={MINI_CARD_STYLE}>
+                <button onClick={() => setActiveStatModal("puntos")} className={`${MINI_CARD_STYLE} hover:scale-105 transition-transform cursor-pointer shadow-sm hover:shadow-md text-left`}>
                   <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                     Puntaje Total
                   </span>
                   <span className="text-3xl font-black mt-1 bg-gradient-to-r from-indigo-600 to-pink-600 dark:from-indigo-400 dark:to-pink-400 bg-clip-text text-transparent">
                     {currentUserStats.points}
                   </span>
-                </div>
-                <div className={MINI_CARD_STYLE}>
+                </button>
+                <button onClick={() => setActiveStatModal("exacto")} className={`${MINI_CARD_STYLE} hover:scale-105 transition-transform cursor-pointer shadow-sm hover:shadow-md text-left`}>
                   <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                     Acierto Exacto
                   </span>
@@ -1236,8 +1290,8 @@ export default function App() {
                   <span className="text-text-muted text-[10px] block font-semibold">
                     (5 pts c/u)
                   </span>
-                </div>
-                <div className={MINI_CARD_STYLE}>
+                </button>
+                <button onClick={() => setActiveStatModal("diferencia")} className={`${MINI_CARD_STYLE} hover:scale-105 transition-transform cursor-pointer shadow-sm hover:shadow-md text-left`}>
                   <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                     Diferencia
                   </span>
@@ -1247,8 +1301,8 @@ export default function App() {
                   <span className="text-text-muted text-[10px] block font-semibold">
                     (3 pts c/u)
                   </span>
-                </div>
-                <div className={MINI_CARD_STYLE}>
+                </button>
+                <button onClick={() => setActiveStatModal("resultado")} className={`${MINI_CARD_STYLE} hover:scale-105 transition-transform cursor-pointer shadow-sm hover:shadow-md text-left`}>
                   <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                     Resultado
                   </span>
@@ -1258,15 +1312,15 @@ export default function App() {
                   <span className="text-text-muted text-[10px] block font-semibold">
                     (2 pts c/u)
                   </span>
-                </div>
-                <div className={`${MINI_CARD_STYLE} col-span-2 md:col-span-1`}>
+                </button>
+                <button onClick={() => setActiveStatModal("pronosticados")} className={`${MINI_CARD_STYLE} col-span-2 md:col-span-1 hover:scale-105 transition-transform cursor-pointer shadow-sm hover:shadow-md text-left`}>
                   <span className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
                     Pronosticados
                   </span>
                   <span className="text-3xl font-black text-text-primary mt-1">
                     {currentUserStats.predictionsCount} / {matches.length}
                   </span>
-                </div>
+                </button>
               </div>
             )}
 
@@ -2774,6 +2828,78 @@ export default function App() {
             >
               ¡Entendido, voy a pronosticar!
             </button>
+          </div>
+        </div>
+      )}
+      {/* Stat Details Modal */}
+      {activeStatModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-card border border-border-color rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border-color flex justify-between items-center bg-bg-input">
+              <h3 className="font-extrabold text-xl text-text-primary capitalize flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-indigo-500" />
+                Detalle de {activeStatModal === "exacto" ? "Acierto Exacto" : activeStatModal === "diferencia" ? "Diferencia de Goles" : activeStatModal}
+              </h3>
+              <button
+                onClick={() => setActiveStatModal(null)}
+                className="text-text-muted hover:text-text-primary p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-900/50 flex-1">
+              <div className="space-y-3">
+                {statMatches && statMatches.length > 0 ? (
+                  statMatches.map(({ match, pred, points }) => {
+                    const homeTeam = TEAMS.find(t => t.code === match.homeTeam);
+                    const awayTeam = TEAMS.find(t => t.code === match.awayTeam);
+                    return (
+                      <div key={match.id} className="bg-bg-card border border-border-color rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4 w-full md:w-auto flex-1">
+                          <div className="flex flex-col items-end w-24">
+                            <span className="text-sm font-bold text-text-primary text-right">{homeTeam?.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-input rounded-lg border border-border-color">
+                            <span className="font-bold w-4 text-center text-text-primary">{match.homeScore !== null ? match.homeScore : "-"}</span>
+                            <span className="text-text-muted text-xs">vs</span>
+                            <span className="font-bold w-4 text-center text-text-primary">{match.awayScore !== null ? match.awayScore : "-"}</span>
+                          </div>
+                          <div className="flex flex-col items-start w-24">
+                            <span className="text-sm font-bold text-text-primary text-left">{awayTeam?.name}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 shrink-0 bg-slate-100 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                          <div className="text-center min-w-[70px]">
+                            <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Tú Prons.</span>
+                            {pred ? (
+                              <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                                {pred.homeScore} - {pred.awayScore}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-semibold text-rose-500">Pendiente</span>
+                            )}
+                          </div>
+                          {activeStatModal !== "pronosticados" && (
+                            <div className="text-center pl-4 border-l border-slate-300 dark:border-slate-600 min-w-[60px]">
+                              <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider block mb-0.5">Puntos</span>
+                              <span className={`font-black text-lg ${points === 5 ? "text-amber-500" : points === 3 ? "text-indigo-500" : points === 2 ? "text-teal-500" : "text-text-muted"}`}>
+                                +{points}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12 text-text-muted">
+                    <div className="text-4xl mb-2">🤷‍♂️</div>
+                    <p className="font-semibold">No hay partidos para mostrar en esta categoría.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
