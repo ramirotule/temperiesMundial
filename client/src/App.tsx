@@ -547,11 +547,10 @@ export default function App() {
               else if (res.type === "outcome") outcomeMatches++;
             }
           } else {
-            // Penalty of -1 if the match is finished and starts from tomorrow (June 12, 2026 ART onwards)
-            if (
-              match.status === "finished" &&
-              new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00")
-            ) {
+            // Penalty of -1 if the match is finished and starts from tomorrow (June 16, 2026 ART onwards to bypass wipe)
+            const matchDate = new Date(match.date);
+            const cutoffDate = new Date("2026-06-16T00:00:00-03:00");
+            if (match.status === "finished" && matchDate >= cutoffDate) {
               points -= 1;
             }
           }
