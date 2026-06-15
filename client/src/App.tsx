@@ -1453,7 +1453,10 @@ export default function App() {
                         statusFilter === "All" || m.status === statusFilter,
                     )
                     .filter((m) => !showTodayOnly || isTodayArgentina(m.date))
-                    .filter((m) => showFinished || statusFilter === "finished" || m.status !== "finished" || teamSearch.trim() !== "")
+                    .filter((m) => {
+                      if (showFinished) return m.status === "finished";
+                      return statusFilter === "finished" || m.status !== "finished" || teamSearch.trim() !== "";
+                    })
                     .filter((m) => {
                       if (!teamSearch.trim()) return true;
                       const searchLower = teamSearch.toLowerCase();
