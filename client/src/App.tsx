@@ -441,6 +441,88 @@ export default function App() {
     localStorage.removeItem("prode_current_user");
   };
 
+  const handleExportMyData = () => {
+    if (!currentUser || currentUser.role === "admin") return;
+
+    const myPredictionsList = Object.entries(predictions[currentUser.id] || {}).map(([matchId, pred]) => {
+      const match = matches.find(m => m.id === matchId);
+      return {
+        partido: `${match?.homeTeam} vs ${match?.awayTeam}`,
+        fecha: match?.date,
+        miPronostico: pred.isBlocked ? "Oculto" : `${pred.homeScore} - ${pred.awayScore}`,
+        resultadoReal: match?.status === 'finished' ? `${match.homeScore} - ${match.awayScore}` : "Pendiente"
+      };
+    });
+
+    // Encontrar stats del user actual
+    const myStats = users
+      .filter((u) => u.role !== "admin")
+      .map((user) => {
+        const userPredictions = predictions[user.id] || {};
+        let points = 0;
+        let exactMatches = 0;
+        let diffMatches = 0;
+        let outcomeMatches = 0;
+
+        matches.forEach((match) => {
+          if (match.status === "finished") {
+            const pred = userPredictions[match.id];
+            if (pred && pred.homeScore !== null && pred.awayScore !== null) {
+              const rH = match.homeScore!;
+              const rA = match.awayScore!;
+              const pH = pred.homeScore;
+              const pA = pred.awayScore;
+
+              if (rH === pH && rA === pA) {
+                points += 5;
+                exactMatches++;
+              } else {
+                const rDiff = rH - rA;
+                const pDiff = pH - pA;
+                const rSign = Math.sign(rDiff);
+                const pSign = Math.sign(pDiff);
+
+                if (rDiff === pDiff && rSign === pSign) {
+                  points += 3;
+                  diffMatches++;
+                } else if (rSign === pSign) {
+                  points += 2;
+                  outcomeMatches++;
+                }
+              }
+            }
+          }
+        });
+        return { id: user.id, points, exactMatches, diffMatches, outcomeMatches };
+      })
+      .sort((a, b) => b.points - a.points || b.exactMatches - a.exactMatches || b.diffMatches - a.diffMatches || b.outcomeMatches - a.outcomeMatches)
+      .map((u, index) => ({ ...u, rank: index + 1 }))
+      .find(u => u.id === currentUser.id);
+
+    const exportData = {
+      empleado: currentUser.name,
+      posicion_en_tabla: myStats?.rank || "?",
+      puntos_totales: myStats?.points || 0,
+      estadisticas: {
+        aciertos_exactos: myStats?.exactMatches || 0,
+        aciertos_diferencia: myStats?.diffMatches || 0,
+        aciertos_resultado: myStats?.outcomeMatches || 0,
+      },
+      mis_pronosticos: myPredictionsList,
+      fecha_exportacion: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mis_pronosticos_${currentUser.username}_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   // Scoreboard calculation
   const leaderboard = useMemo(() => {
     return users
@@ -812,6 +894,13 @@ export default function App() {
               </div>
 
               <button
+                onClick={handleExportMyData}
+                className="p-2 bg-slate-200 dark:bg-slate-900 hover:bg-indigo-950/40 hover:text-indigo-500 text-slate-600 dark:text-slate-400 border border-border-color rounded-xl transition-colors cursor-pointer"
+                title="Descargar mi Backup Personal"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button
                 onClick={handleLogout}
                 className="p-2 bg-slate-200 dark:bg-slate-900 hover:bg-red-950/40 hover:text-red-400 text-slate-600 dark:text-slate-400 border border-border-color rounded-xl transition-colors cursor-pointer"
                 title="Cerrar Sesión"
@@ -1039,6 +1128,26 @@ export default function App() {
         ) : (
           /* Dashboard Dashboard */
           <div className="space-y-6">
+            <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm mb-6 animate-pulse-slow">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                    Aviso Importante: Reseteo de Base de Datos
+                  </h3>
+                  <div className="mt-1 text-xs text-amber-800 dark:text-amber-200/80 leading-relaxed">
+                    <p>
+                      Debido a una falla técnica en la base de datos se borraron los pronósticos.
+                      Por favor, <strong>vuelvan a cargar sus predicciones para los próximos partidos</strong>. 
+                      Si recuerdan su puntaje exacto, avísenle por WhatsApp a Ramiro (+54 9 2954 82-4618) para que lo ajuste manualmente. ¡Gracias por la paciencia!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Stats Dashboard Mini Banner */}
             {currentUser.role !== "admin" && currentUserStats && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
