@@ -20,6 +20,7 @@ export interface Prediction {
   homeScore: number;
   awayScore: number;
   createdAt: string;
+  isBlocked?: boolean;
 }
 
 export interface User {
