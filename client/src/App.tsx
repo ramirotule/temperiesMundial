@@ -388,6 +388,7 @@ export default function App() {
   const [groupFilter, setGroupFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [showTodayOnly, setShowTodayOnly] = useState<boolean>(false);
+  const [showFinished, setShowFinished] = useState<boolean>(false);
   const [teamSearch, setTeamSearch] = useState<string>("");
 
   const isTodayArgentina = (dateStr: string) => {
@@ -1211,16 +1212,28 @@ export default function App() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setShowTodayOnly((prev) => !prev)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
-                      showTodayOnly
-                        ? "bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white"
-                        : "bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
-                    }`}
-                  >
-                    📅 Partidos de Hoy
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setShowFinished((prev) => !prev)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
+                        showFinished
+                          ? "bg-indigo-600/15 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-md shadow-indigo-500/5 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white"
+                          : "bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                      }`}
+                    >
+                      ✅ Ver Finalizados
+                    </button>
+                    <button
+                      onClick={() => setShowTodayOnly((prev) => !prev)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
+                        showTodayOnly
+                          ? "bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white"
+                          : "bg-bg-input border-border-color text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                      }`}
+                    >
+                      📅 Partidos de Hoy
+                    </button>
+                  </div>
                 </div>
 
                 {/* Matches Grid */}
@@ -1234,6 +1247,7 @@ export default function App() {
                         statusFilter === "All" || m.status === statusFilter,
                     )
                     .filter((m) => !showTodayOnly || isTodayArgentina(m.date))
+                    .filter((m) => showFinished || statusFilter === "finished" || m.status !== "finished" || teamSearch.trim() !== "")
                     .filter((m) => {
                       if (!teamSearch.trim()) return true;
                       const searchLower = teamSearch.toLowerCase();

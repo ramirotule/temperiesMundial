@@ -162,7 +162,11 @@ function generateMatches() {
       
       const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
       const hourUTC = hour + 3;
-      const matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
+      let matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
+
+      if (pair.home.code === 'es' && pair.away.code === 'cv') {
+        matchDate = new Date(Date.UTC(2026, 5, 15, 16, 0, 0));
+      }
       
       let status = 'scheduled';
       let homeScore = null;
