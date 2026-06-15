@@ -2,14 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const EMPLOYEES = [
-  'Eduardo Rodriguez', 'Gabriel Vergara', 'Matias Mercado', 'Alejandro Riccillo', 'Claudio Mazolli',
-  'Ramiro Toulemonde', 'Yesica Arevalo', 'Federico Martinez', 'Mauricio Aiello', 'Milagros Aranzabe',
-  'Rocio Smidt', 'Alejandro Morreale', 'Daiana Amarante', 'Leandro Saraceno', 'Franco Flores',
-  'Nicola Cocciaretti', 'Guido Arce', 'Joaquin Burgos', 'Lucas Gil', 'Matias Dieguez',
-  'Nacho', 'Conrado Blanco', 'Dolores Bruzzone', 'Julieta Belsito', 'Florencia Belsito', 'Ailen Fleites','Vanesa DellAqua','Guillermo Belsito'
-];
-
 const TEAMS = [
   { name: 'México', code: 'mx', group: 'A' },
   { name: 'Sudáfrica', code: 'za', group: 'A' },
@@ -60,29 +52,6 @@ const TEAMS = [
   { name: 'Ghana', code: 'gh', group: 'L' },
   { name: 'Panamá', code: 'pa', group: 'L' },
 ];
-
-const STADIUMS = [
-  'Estadio Azteca, CDMX',
-  'Estadio BBVA, Monterrey',
-  'Estadio Akron, Guadalajara',
-  'MetLife Stadium, NY/NJ',
-  'SoFi Stadium, Los Ángeles',
-  'AT&T Stadium, Dallas',
-  'Mercedes-Benz Stadium, Atlanta',
-  'Hard Rock Stadium, Miami',
-  'Lumen Field, Seattle',
-  'Levi\'s Stadium, San Francisco',
-  'BC Place, Vancouver',
-  'BMO Field, Toronto'
-];
-
-function hashString(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return hash;
-}
 
 function generateMatches() {
   const matches = [];
@@ -160,122 +129,53 @@ function generateMatches() {
         else if (idx === 5) { day = 25; hour = 20; }
       }
       
-      const stadium = STADIUMS[Math.abs(hashString(pair.home.name + pair.away.name)) % STADIUMS.length];
       const hourUTC = hour + 3;
       let matchDate = new Date(Date.UTC(2026, 5, day + dayOffset, hourUTC, 0, 0));
 
       if (pair.home.code === 'es' && pair.away.code === 'cv') {
         matchDate = new Date(Date.UTC(2026, 5, 15, 16, 0, 0));
       }
-      
-      let status = 'scheduled';
-      let homeScore = null;
-      let awayScore = null;
+      if (pair.home.code === 'sa' && pair.away.code === 'uy') {
+        // Fix the issue the user complained about
+        matchDate = new Date(Date.UTC(2026, 5, 15, 19 + 3, 0, 0));
+      }
       
       matches.push({
         id: `M${matchIndex.toString().padStart(2, '0')}`,
         homeTeam: pair.home.code,
         awayTeam: pair.away.code,
         date: matchDate,
-        group: groupChar,
-        homeScore,
-        awayScore,
-        stadium,
-        status,
+        group: groupChar
       });
       
       matchIndex++;
     });
   });
 
-  return matches.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return matches;
 }
 
-async function main() {
-  console.log('Seeding started...');
-
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (dbUrl.includes('render.com') || dbUrl.includes('dpg-')) {
-    console.error('====================================================');
-    console.error('🛑 ERROR CRÍTICO: ESTÁS APUNTANDO A PRODUCCIÓN 🛑');
-    console.error('El script de seed borra TODA la base de datos.');
-    console.error('Abortando ejecución para proteger los datos de producción.');
-    console.error('====================================================');
-    process.exit(1);
+async function restoreFixture() {
+  console.log("Restaurando el fixture original...");
+  const oldMatches = generateMatches();
+  
+  for (const m of oldMatches) {
+    await prisma.match.update({
+      where: { id: m.id },
+      data: {
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        date: m.date,
+        group: m.group
+      }
+    });
   }
   
-  // Clear Database
-  await prisma.prediction.deleteMany();
-  await prisma.match.deleteMany();
-  await prisma.user.deleteMany();
-  
-  const PASSWORD_MAP = {
-    'Eduardo Rodriguez': 'edu.941',
-    'Gabriel Vergara': 'gab.728',
-    'Matias Mercado': 'mat.109',
-    'Alejandro Riccillo': 'ale.852',
-    'Claudio Mazolli': 'cla.491',
-    'Ramiro Toulemonde': 'ram.305',
-    'Yesica Arevalo': 'yes.673',
-    'Federico Martinez': 'fed.214',
-    'Mauricio Aiello': 'mau.836',
-    'Milagros Aranzabe': 'mil.198',
-    'Rocio Smidt': 'roc.542',
-    'Alejandro Morreale': 'mor.703',
-    'Daiana Amarante': 'dai.619',
-    'Leandro Saraceno': 'lea.285',
-    'Franco Flores': 'fra.390',
-    'Nicola Cocciaretti': 'nic.571',
-    'Guido Arce': 'gui.843',
-    'Joaquin Burgos': 'joa.167',
-    'Lucas Gil': 'luc.902',
-    'Matias Dieguez': 'die.384',
-    'Nacho': 'nac.750',
-    'Conrado Blanco': 'con.426',
-    'Dolores Bruzzone': 'dol.824',
-    'Julieta Belsito': 'jul.375',
-    'Florencia Belsito': 'flo.849',
-    'Ailen Fleites': 'ail.716',
-    'Vanesa DellAcqua': 'van.392',
-    'Guillermo Belsito': 'gui.684'
-  };
-
-  // 1. Seed Users
-  const usersToCreate = [
-    { username: 'admin', name: 'Administrador', role: 'admin', avatarSeed: 'admin', password: 'adminmundial2026' },
-    ...EMPLOYEES.map((name, idx) => {
-      const password = PASSWORD_MAP[name] || '1234';
-      return {
-        username: name.toLowerCase().replace(/\s+/g, '.'),
-        name,
-        role: 'user',
-        avatarSeed: `emp-${idx + 1}`,
-        password
-      };
-    })
-  ];
-  
-  const createdUsers = [];
-  for (const u of usersToCreate) {
-    const user = await prisma.user.create({ data: u });
-    createdUsers.push(user);
-  }
-  console.log(`Created ${createdUsers.length} users.`);
-
-  // 2. Seed Matches
-  const matchesToCreate = generateMatches();
-  const createdMatches = [];
-  for (const m of matchesToCreate) {
-    const match = await prisma.match.create({ data: m });
-    createdMatches.push(match);
-  }
-  console.log(`Created ${createdMatches.length} matches.`);
-
-  console.log('Seeding completed successfully.');
+  console.log("Fixture restaurado con éxito!");
 }
 
-main()
-  .catch((e) => {
+restoreFixture()
+  .catch(e => {
     console.error(e);
     process.exit(1);
   })
