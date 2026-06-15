@@ -1343,7 +1343,12 @@ export default function App() {
 
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => setShowFinished((prev) => !prev)}
+                      onClick={() => {
+                        if (!showFinished) {
+                          setShowTodayOnly(false);
+                        }
+                        setShowFinished((prev) => !prev);
+                      }}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
                         showFinished
                           ? "bg-indigo-600/15 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-md shadow-indigo-500/5 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white"
@@ -1353,7 +1358,12 @@ export default function App() {
                       ✅ Ver Finalizados
                     </button>
                     <button
-                      onClick={() => setShowTodayOnly((prev) => !prev)}
+                      onClick={() => {
+                        if (!showTodayOnly) {
+                          setShowFinished(false);
+                        }
+                        setShowTodayOnly((prev) => !prev);
+                      }}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border ${
                         showTodayOnly
                           ? "bg-rose-600/15 border-rose-500 text-rose-600 dark:text-rose-400 font-extrabold shadow-md shadow-rose-500/5 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white"
