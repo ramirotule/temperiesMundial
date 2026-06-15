@@ -645,6 +645,15 @@ export default function App() {
 
     const match = matches.find((m) => m.id === matchId);
     if (match) {
+      const matchDate = new Date(match.date);
+      const isJune15 = matchDate >= new Date("2026-06-15T00:00:00-03:00") && matchDate < new Date("2026-06-16T00:00:00-03:00");
+      
+      if (isJune15) {
+        setErrorModalMsg(
+          "Para evitar inconvenientes por el problema en la base de datos, los pronósticos para los partidos del 15 de Junio se encuentran excepcionalmente deshabilitados."
+        );
+        return;
+      }
       if (match.status !== "scheduled" || new Date() >= new Date(match.date)) {
         setErrorModalMsg(
           "No se permite guardar pronósticos una vez comenzado o finalizado el partido.",
