@@ -193,6 +193,16 @@ function generateMatches() {
 
 async function main() {
   console.log('Seeding started...');
+
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl.includes('render.com') || dbUrl.includes('dpg-')) {
+    console.error('====================================================');
+    console.error('🛑 ERROR CRÍTICO: ESTÁS APUNTANDO A PRODUCCIÓN 🛑');
+    console.error('El script de seed borra TODA la base de datos.');
+    console.error('Abortando ejecución para proteger los datos de producción.');
+    console.error('====================================================');
+    process.exit(1);
+  }
   
   // Clear Database
   await prisma.prediction.deleteMany();

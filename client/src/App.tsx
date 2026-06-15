@@ -1118,7 +1118,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <BookOpen className="w-4 h-4" /> Reglamento & Premios 🥇 🥈 🥉
+                  <BookOpen className="w-4 h-4" /> Reglamento & Premios
                 </button>
 
                 {currentUser.role === "admin" && (
@@ -2026,7 +2026,7 @@ export default function App() {
                                 ) : rank === 3 ? (
                                   <span className="text-xl">🥉</span>
                                 ) : (
-                                  <span className="text-slate-400 text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400 text-sm">
                                     {rank}
                                   </span>
                                 )}
@@ -2042,7 +2042,7 @@ export default function App() {
                                   </div>
                                   <div>
                                     <span
-                                      className={`text-sm font-bold block ${isCurrentUser ? "text-indigo-400" : "text-slate-200"}`}
+                                      className={`text-sm font-bold block ${isCurrentUser ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200"}`}
                                     >
                                       {row.user.name}
                                     </span>
@@ -2054,7 +2054,7 @@ export default function App() {
                               </td>
 
                               {/* Predicted counts */}
-                              <td className="py-3.5 px-4 text-center text-sm font-semibold text-slate-300 font-mono">
+                              <td className="py-3.5 px-4 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 font-mono">
                                 {row.stats.predictionsCount}
                               </td>
 
