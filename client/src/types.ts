@@ -30,6 +30,9 @@ export interface User {
   role: 'admin' | 'user';
   avatarSeed: string; // For generating a nice UI avatar
   password?: string; // User password
+  legacyExactMatches?: number;
+  legacyDiffMatches?: number;
+  legacyOutcomeMatches?: number;
 }
 
 export interface UserState {

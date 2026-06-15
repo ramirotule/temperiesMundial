@@ -459,10 +459,10 @@ export default function App() {
       .filter((u) => u.role !== "admin")
       .map((user) => {
         const userPredictions = predictions[user.id] || {};
-        let points = 0;
-        let exactMatches = 0;
-        let diffMatches = 0;
-        let outcomeMatches = 0;
+        let exactMatches = user.legacyExactMatches || 0;
+        let diffMatches = user.legacyDiffMatches || 0;
+        let outcomeMatches = user.legacyOutcomeMatches || 0;
+        let points = (exactMatches * 5) + (diffMatches * 3) + (outcomeMatches * 2);
 
         matches.forEach((match) => {
           if (match.status === "finished") {
@@ -529,11 +529,11 @@ export default function App() {
       .filter((u) => u.role !== "admin")
       .map((user) => {
         const userPredictions = predictions[user.id] || {};
-        let points = 0;
-        let exactMatches = 0;
-        let diffMatches = 0;
-        let outcomeMatches = 0;
-        let predictionsCount = 0;
+        let exactMatches = user.legacyExactMatches || 0;
+        let diffMatches = user.legacyDiffMatches || 0;
+        let outcomeMatches = user.legacyOutcomeMatches || 0;
+        let points = (exactMatches * 5) + (diffMatches * 3) + (outcomeMatches * 2);
+        let predictionsCount = (exactMatches + diffMatches + outcomeMatches); // Optional: give them their past matches as predictionsCount base
 
         matches.forEach((match) => {
           const pred = userPredictions[match.id];
