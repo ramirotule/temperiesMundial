@@ -442,7 +442,49 @@ export default function App() {
   };
 
   const handleExportMyData = () => {
-    if (!currentUser || currentUser.role === "admin") return;
+    if (!currentUser) return;
+
+    if (currentUser.role === "admin") {
+      // BACKUP GLOBAL PARA EL ADMIN
+      const exportData = {
+        fecha_exportacion: new Date().toISOString(),
+        tipo: "Backup Global Completo",
+        tabla_posiciones: leaderboard.map(u => ({
+          posicion: u.rank,
+          empleado: u.name,
+          usuario: u.username,
+          puntos: u.points,
+          exactos: u.exactMatches,
+          diferencia: u.diffMatches,
+          resultado: u.outcomeMatches
+        })),
+        todos_los_pronosticos: users.filter(u => u.role !== "admin").map(u => {
+          return {
+            empleado: u.name,
+            pronosticos: Object.entries(predictions[u.id] || {}).map(([matchId, pred]) => {
+              const match = matches.find(m => m.id === matchId);
+              return {
+                partido: `${match?.homeTeam} vs ${match?.awayTeam}`,
+                estado: match?.status,
+                pronostico: `${pred.homeScore} - ${pred.awayScore}`,
+                resultadoReal: match?.status === 'finished' ? `${match.homeScore} - ${match.awayScore}` : "Pendiente"
+              };
+            })
+          };
+        })
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup_global_prode_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      return;
+    }
 
     const myPredictionsList = Object.entries(predictions[currentUser.id] || {}).map(([matchId, pred]) => {
       const match = matches.find(m => m.id === matchId);
@@ -895,7 +937,7 @@ export default function App() {
               <button
                 onClick={handleExportMyData}
                 className="p-2 bg-slate-200 dark:bg-slate-900 hover:bg-indigo-950/40 hover:text-indigo-500 text-slate-600 dark:text-slate-400 border border-border-color rounded-xl transition-colors cursor-pointer"
-                title="Descargar mi Backup Personal"
+                title={currentUser.role === "admin" ? "Descargar Backup Global" : "Descargar mi Backup Personal"}
               >
                 <Save className="w-4 h-4" />
               </button>
@@ -1433,7 +1475,7 @@ export default function App() {
                         match.status === "finished"
                           ? userPred
                             ? calculatePoints(match, userPred)
-                            : { points: new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00") ? -1 : 0, type: "none" as const }
+                            : { points: new Date(match.date) >= new Date("2026-06-16T00:00:00-03:00") ? -1 : 0, type: "none" as const }
                           : null;
 
                       return (
@@ -2533,7 +2575,7 @@ export default function App() {
                     match.status === "finished"
                       ? userPred
                         ? calculatePoints(match, userPred)
-                        : { points: new Date(match.date) >= new Date("2026-06-12T00:00:00-03:00") ? -1 : 0, type: "none" as const }
+                        : { points: new Date(match.date) >= new Date("2026-06-16T00:00:00-03:00") ? -1 : 0, type: "none" as const }
                       : null;
 
                   const isMatchStartedPlus1Min = new Date().getTime() >= new Date(match.date).getTime() + 60 * 1000;
