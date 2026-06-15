@@ -449,14 +449,14 @@ export default function App() {
       const exportData = {
         fecha_exportacion: new Date().toISOString(),
         tipo: "Backup Global Completo",
-        tabla_posiciones: leaderboard.map(u => ({
-          posicion: u.rank,
-          empleado: u.name,
-          usuario: u.username,
-          puntos: u.points,
-          exactos: u.exactMatches,
-          diferencia: u.diffMatches,
-          resultado: u.outcomeMatches
+        tabla_posiciones: leaderboard.map((u, index) => ({
+          posicion: index + 1,
+          empleado: u.user.name,
+          usuario: u.user.username,
+          puntos: u.stats.points,
+          exactos: u.stats.exactMatches,
+          diferencia: u.stats.diffMatches,
+          resultado: u.stats.outcomeMatches
         })),
         todos_los_pronosticos: users.filter(u => u.role !== "admin").map(u => {
           return {
