@@ -175,6 +175,11 @@ app.post('/api/predictions', async (req, res) => {
       return res.status(400).json({ error: 'No se permite guardar resultados una vez comenzado o finalizado el partido.' });
     }
 
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(401).json({ error: 'Tu sesión es inválida o expiró (la base de datos se reinició). Por favor deslogueate desde el menú de usuario arriba a la derecha y volvé a ingresar.' });
+    }
+
     const prediction = await prisma.prediction.upsert({
       where: {
         userId_matchId: { userId, matchId }
