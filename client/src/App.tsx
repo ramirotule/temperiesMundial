@@ -2938,7 +2938,12 @@ export default function App() {
             </h3>
             <p className="text-text-secondary text-sm mb-6">{errorModalMsg}</p>
             <button
-              onClick={() => setErrorModalMsg(null)}
+              onClick={() => {
+                if (errorModalMsg?.includes("deslogueate")) {
+                  handleLogout();
+                }
+                setErrorModalMsg(null);
+              }}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-md shadow-indigo-600/20 hover:shadow-indigo-500/30 cursor-pointer text-sm"
             >
               Aceptar
