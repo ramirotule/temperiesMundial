@@ -202,7 +202,7 @@ app.post('/api/predictions', async (req, res) => {
 // 6. Admin: Update Real Match Result
 app.put('/api/admin/matches/:id', async (req, res) => {
   const { id } = req.params;
-  const { homeScore, awayScore, status } = req.body;
+  const { homeScore, awayScore, status, date } = req.body;
 
   try {
     const hScore = homeScore === "" || homeScore === null ? null : parseInt(homeScore);
@@ -212,13 +212,19 @@ app.put('/api/admin/matches/:id', async (req, res) => {
       return res.status(400).json({ error: 'Debe cargar un resultado para finalizar el partido.' });
     }
 
+    const updateData = {
+      homeScore: hScore,
+      awayScore: aScore,
+      status
+    };
+
+    if (date) {
+      updateData.date = new Date(date);
+    }
+
     const match = await prisma.match.update({
       where: { id },
-      data: {
-        homeScore: hScore,
-        awayScore: aScore,
-        status
-      }
+      data: updateData
     });
 
     res.json({

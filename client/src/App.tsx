@@ -430,6 +430,10 @@ export default function App() {
   >({});
   const [editingFinishedMatches, setEditingFinishedMatches] = useState<Record<string, boolean>>({});
 
+  // States for matching date editing (Admin)
+  const [adminDateEdits, setAdminDateEdits] = useState<Record<string, string>>({});
+  const [editingDateMatches, setEditingDateMatches] = useState<Record<string, boolean>>({});
+
   // States for employee predictions editing
   const [predEdits, setPredEdits] = useState<
     Record<string, { homeScore: string; awayScore: string }>
@@ -785,6 +789,56 @@ export default function App() {
       });
     } catch (error) {
       setErrorModalMsg("Error de conexión al guardar resultado.");
+    }
+  };
+
+  const saveMatchDate = async (matchId: string) => {
+    const newDateStr = adminDateEdits[matchId];
+    if (!newDateStr) return;
+    
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/matches/${matchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          homeScore: match.homeScore, 
+          awayScore: match.awayScore, 
+          status: match.status,
+          date: new Date(newDateStr).toISOString()
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorModalMsg(data.error || "Error al guardar la nueva fecha.");
+        return;
+      }
+
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === matchId
+            ? mapMatchStatus({
+                ...m,
+                date: data.date,
+              })
+            : m,
+        ),
+      );
+
+      setAdminDateEdits((prev) => {
+        const copy = { ...prev };
+        delete copy[matchId];
+        return copy;
+      });
+      setEditingDateMatches((prev) => {
+        const copy = { ...prev };
+        delete copy[matchId];
+        return copy;
+      });
+    } catch (error) {
+      setErrorModalMsg("Error de conexión al guardar la fecha.");
     }
   };
 
@@ -2570,6 +2624,102 @@ export default function App() {
                               </div>
                             );
                           })()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={`${CARD_STYLE}`}>
+                  <h3 className="text-lg font-black text-text-primary mb-6">
+                    Editar Fecha y Hora de Próximos Partidos
+                  </h3>
+
+                  <div className="divide-y divide-border-color/50 space-y-4">
+                    {matches.filter(m => m.status === 'scheduled').map((match) => {
+                      const homeTeam = TEAMS.find((t) => t.code === match.homeTeam);
+                      const awayTeam = TEAMS.find((t) => t.code === match.awayTeam);
+                      
+                      const dateObj = new Date(match.date);
+                      // Format to local datetime string for input YYYY-MM-DDTHH:mm
+                      const tzOffset = dateObj.getTimezoneOffset() * 60000;
+                      const localISOTime = new Date(dateObj.getTime() - tzOffset).toISOString().slice(0, 16);
+                      
+                      const editState = adminDateEdits[match.id] || localISOTime;
+                      const isEditing = !!editingDateMatches[match.id];
+
+                      return (
+                        <div
+                          key={`date-${match.id}`}
+                          className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="font-mono text-xs text-text-muted font-bold bg-bg-input px-2 py-1 rounded border border-border-color">
+                              {match.id}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-text-secondary">
+                                {homeScoreReplacement(homeTeam?.name || match.homeTeam)}
+                              </span>
+                              <span className="text-text-muted text-xs">vs</span>
+                              <span className="font-bold text-sm text-text-secondary">
+                                {homeScoreReplacement(awayTeam?.name || match.awayTeam)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="datetime-local"
+                              value={editState}
+                              disabled={!isEditing}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setAdminDateEdits((prev) => ({
+                                  ...prev,
+                                  [match.id]: val,
+                                }));
+                              }}
+                              className="bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+
+                            {!isEditing ? (
+                              <button
+                                type="button"
+                                onClick={() => setEditingDateMatches((prev) => ({ ...prev, [match.id]: true }))}
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                              >
+                                Editar Fecha
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => saveMatchDate(match.id)}
+                                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                >
+                                  <Check className="w-3.5 h-3.5" /> Guardar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAdminDateEdits((prev) => {
+                                      const copy = { ...prev };
+                                      delete copy[match.id];
+                                      return copy;
+                                    });
+                                    setEditingDateMatches((prev) => {
+                                      const copy = { ...prev };
+                                      delete copy[match.id];
+                                      return copy;
+                                    });
+                                  }}
+                                  className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
