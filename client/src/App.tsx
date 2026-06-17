@@ -1314,27 +1314,7 @@ export default function App() {
         ) : (
           /* Dashboard Dashboard */
           <div className="space-y-6">
-            <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm mb-6 animate-pulse-slow">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 mt-0.5">
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                    Aviso Importante: Recuperación de Datos
-                  </h3>
-                  <div className="mt-1 text-xs text-amber-800 dark:text-amber-200/80 leading-relaxed">
-                    <p>
-                      El día 15 de Junio surgió un problema en la base de datos por el cual se perdieron los pronósticos pasados y futuros. <strong>¡Por suerte, la tabla de posiciones se pudo recuperar con éxito!</strong>
-                      <br/><br/>
-                      <strong>Aviso sobre los partidos de hoy:</strong> Los pronósticos de los partidos del día 15 de Junio <strong>no serán tenidos en cuenta</strong> para el puntaje (considerando que es feriado y no todos están atentos). Retomaremos los cálculos y las predicciones con normalidad a partir de mañana, martes 16 de Junio.
-                      <br/><br/>
-                      Como medida de seguridad, ahora tenés disponible una opción de <strong>Auto-Backup</strong> (ícono de disquete 💾) arriba a la derecha, al lado de tu nombre de usuario. ¡Te recomendamos usarla para guardar tu progreso!
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
             {/* Stats Dashboard Mini Banner */}
             {currentUser.role !== "admin" && currentUserStats && (
