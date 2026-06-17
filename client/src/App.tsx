@@ -450,48 +450,61 @@ export default function App() {
     localStorage.removeItem("prode_current_user");
   };
 
-  const handleExportMyData = () => {
+  const handleExportMyData = async () => {
     if (!currentUser) return;
 
     if (currentUser.role === "admin") {
       // BACKUP GLOBAL PARA EL ADMIN
-      const exportData = {
-        fecha_exportacion: new Date().toISOString(),
-        tipo: "Backup Global Completo",
-        tabla_posiciones: leaderboard.map((u, index) => ({
-          posicion: index + 1,
-          empleado: u.user.name,
-          usuario: u.user.username,
-          puntos: u.stats.points,
-          exactos: u.stats.exactMatches,
-          diferencia: u.stats.diffMatches,
-          resultado: u.stats.outcomeMatches
-        })),
-        todos_los_pronosticos: users.filter(u => u.role !== "admin").map(u => {
-          return {
-            empleado: u.name,
-            pronosticos: Object.entries(predictions[u.id] || {}).map(([matchId, pred]) => {
-              const match = matches.find(m => m.id === matchId);
-              return {
-                partido: `${match?.homeTeam} vs ${match?.awayTeam}`,
-                estado: match?.status,
-                pronostico: `${pred.homeScore} - ${pred.awayScore}`,
-                resultadoReal: match?.status === 'finished' ? `${match.homeScore} - ${match.awayScore}` : "Pendiente"
-              };
-            })
-          };
-        })
-      };
+      try {
+        // Fetch unfiltered predictions (includes future matches with real values)
+        const res = await fetch(`${API_BASE_URL}/api/admin/predictions`);
+        if (!res.ok) throw new Error("Error fetching predictions");
+        const allPredictions = await res.json();
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `backup_global_prode_${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+        const exportData = {
+          fecha_exportacion: new Date().toISOString(),
+          tipo: "Backup Global Completo",
+          tabla_posiciones: leaderboard.map((u, index) => ({
+            posicion: index + 1,
+            empleado: u.user.name,
+            usuario: u.user.username,
+            puntos: u.stats.points,
+            exactos: u.stats.exactMatches,
+            diferencia: u.stats.diffMatches,
+            resultado: u.stats.outcomeMatches
+          })),
+          todos_los_pronosticos: users.filter(u => u.role !== "admin").map(u => {
+            return {
+              empleado: u.name,
+              pronosticos: Object.entries(allPredictions[u.id] || {}).map(([matchId, pred]: [string, any]) => {
+                const match = matches.find(m => m.id === matchId);
+                return {
+                  partido: `${match?.homeTeam} vs ${match?.awayTeam}`,
+                  grupo: match?.group || null,
+                  fecha_partido: match?.date,
+                  estado: match?.status,
+                  pronostico: pred.homeScore !== null && pred.awayScore !== null
+                    ? `${pred.homeScore} - ${pred.awayScore}`
+                    : "Sin pronóstico",
+                  resultadoReal: match?.status === 'finished' ? `${match.homeScore} - ${match.awayScore}` : "Pendiente"
+                };
+              })
+            };
+          })
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backup_global_prode_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        setErrorModalMsg("Error al generar el backup global.");
+      }
       return;
     }
 

@@ -340,7 +340,32 @@ app.post('/api/admin/reset-matches', async (req, res) => {
     res.status(500).json({ error: 'Error al restablecer partidos.' });
   }
 });
-// 10. Admin: Download Database Backup
+// 10. Admin: Get All Predictions (unfiltered, for backup)
+app.get('/api/admin/predictions', async (req, res) => {
+  try {
+    const predictions = await prisma.prediction.findMany({
+      include: { match: true }
+    });
+    const predictionMap = {};
+
+    predictions.forEach(p => {
+      if (!predictionMap[p.userId]) {
+        predictionMap[p.userId] = {};
+      }
+      predictionMap[p.userId][p.matchId] = {
+        homeScore: p.homeScore,
+        awayScore: p.awayScore,
+        isBlocked: false,
+        createdAt: p.createdAt
+      };
+    });
+    res.json(predictionMap);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener predicciones para backup.' });
+  }
+});
+
+// 11. Admin: Download Database Backup
 app.get('/api/admin/backup', async (req, res) => {
   try {
     const users = await prisma.user.findMany();
