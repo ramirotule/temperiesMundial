@@ -2747,7 +2747,7 @@ export default function App() {
               <div className="space-y-3">
                 {(() => {
                   let foundFirstPending = false;
-                  return [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((match) => {
+                  return [...matches].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((match) => {
                   const homeTeam = TEAMS.find((t) => t.code === match.homeTeam);
                   const awayTeam = TEAMS.find((t) => t.code === match.awayTeam);
                   const userPred = predictions[selectedUser.id]?.[match.id];
