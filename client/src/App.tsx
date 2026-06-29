@@ -53,6 +53,18 @@ const KNOCKOUT_PHASES: Record<string, string> = {
 
 const GROUP_CODES = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
+// R16 match pairs → QF matchups
+const BRACKET_R16_PAIRS: [string, string][] = [
+  ['M73', 'M74'], // Canada/Sudáfrica vs Brasil/Japón
+  ['M75', 'M76'], // Alemania/Paraguay vs Países Bajos/Marruecos
+  ['M77', 'M78'], // Costa de Marfil/Noruega vs Francia/Suecia
+  ['M79', 'M80'], // México/Ecuador vs Inglaterra/RD Congo
+  ['M81', 'M82'], // Bélgica/Senegal vs Estados Unidos/Bosnia
+  ['M83', 'M84'], // España/Austria vs Portugal/Croacia
+  ['M85', 'M86'], // Suiza/Argelia vs Australia/Egipto
+  ['M87', 'M88'], // Argentina/Cabo Verde vs Colombia/Ghana
+];
+
 // World Cup group standings calculation & simulation engine
 function computeGroupStandingsForGroup(
   groupChar: string,
@@ -248,6 +260,13 @@ function getAvatarColor(str: string) {
     "from-fuchsia-500 to-pink-600",
   ];
   return colors[Math.abs(hash) % colors.length];
+}
+
+function getMatchWinner(match: Match): string | null {
+  if (match.status !== 'finished' || match.homeScore === null || match.awayScore === null) return null;
+  if (match.homeScore > match.awayScore) return match.homeTeam;
+  if (match.awayScore > match.homeScore) return match.awayTeam;
+  return null; // draw in knockout = penalties, handle manually via DB
 }
 
 function mapMatchStatus(match: Match): Match {
@@ -1358,7 +1377,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <Award className="w-4 h-4" /> Decisivos
+                  <Award className="w-4 h-4" /> Partidos
                 </button>
 
                 <button
@@ -1369,7 +1388,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <Trophy className="w-4 h-4" /> Posiciones Mundial
+                  <Trophy className="w-4 h-4" /> Llaves del Mundial
                 </button>
 
                 <button
@@ -2068,131 +2087,239 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB: WORLD CUP GROUP STANDINGS */}
+            {/* TAB: BRACKET / LLAVES */}
             {activeTab === "groupStandings" && (
-              <div className="space-y-6">
-                <div className={`${CARD_STYLE} relative overflow-hidden animate-fade-in`}>
-                  <div className="flex items-center gap-3 border-b border-border-color pb-4 mb-6">
-                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl text-indigo-500 dark:text-indigo-400">
-                      <Trophy className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-text-primary">
-                        Posiciones por Grupo del Mundial
-                      </h3>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        Tablas calculadas dinámicamente según los resultados oficiales de los partidos
-                      </p>
-                    </div>
-                  </div>
+              <div className="space-y-10">
+                {/* 16avos de Final */}
+                <div>
+                  <h2 className="text-2xl font-black text-text-primary mb-6 flex items-center gap-3">
+                    <Trophy className="w-6 h-6 text-indigo-500" />
+                    16avos de Final
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {BRACKET_R16_PAIRS.map(([id1, id2], pairIdx) => {
+                      const match1 = matches.find(m => m.id === id1);
+                      const match2 = matches.find(m => m.id === id2);
+                      if (!match1 || !match2) return null;
 
-                  {/* Grid of Groups */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"].map((groupChar) => {
-                      const standings = getGroupStandingsWithStatus(groupChar, matches, TEAMS);
+                      const winner1 = getMatchWinner(match1);
+                      const winner2 = getMatchWinner(match2);
+                      const home1 = TEAMS.find(t => t.code === match1.homeTeam);
+                      const away1 = TEAMS.find(t => t.code === match1.awayTeam);
+                      const home2 = TEAMS.find(t => t.code === match2.homeTeam);
+                      const away2 = TEAMS.find(t => t.code === match2.awayTeam);
+
+                      const qfHome = winner1 ? TEAMS.find(t => t.code === winner1) : null;
+                      const qfAway = winner2 ? TEAMS.find(t => t.code === winner2) : null;
+
                       return (
-                        <div key={groupChar} className="bg-slate-500/5 border border-border-color rounded-2xl p-5 shadow-sm flex flex-col justify-between">
-                          <div>
-                            <div className="flex items-center justify-between mb-4 pb-2 border-b border-border-color">
-                              <h4 className="font-extrabold text-base text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
-                                Grupo {groupChar}
-                              </h4>
-                              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                                Clasifican los 2 primeros
-                              </span>
+                        <div key={pairIdx} className={`${CARD_STYLE} !p-0 overflow-hidden`}>
+                          {/* Match 1 */}
+                          <div className={`p-4 ${winner1 ? 'bg-emerald-500/5' : ''}`}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Partido {id1}</span>
+                              {match1.status === 'finished' && (
+                                <span className="text-[10px] font-bold text-emerald-500 uppercase">Finalizado</span>
+                              )}
+                              {match1.status === 'scheduled' && (
+                                <span className="text-[10px] font-bold text-text-muted uppercase">
+                                  {new Date(match1.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
+                                </span>
+                              )}
+                              {match1.status === 'live' && (
+                                <span className="text-[10px] font-bold text-red-500 uppercase animate-pulse">● En Vivo</span>
+                              )}
                             </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-1">
+                                <img src={`https://flagcdn.com/w40/${match1.homeTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
+                                <span className={`text-sm font-bold ${winner1 === match1.homeTeam ? 'text-emerald-500' : winner1 === match1.awayTeam ? 'text-text-muted' : 'text-text-primary'}`}>
+                                  {homeScoreReplacement(home1?.name || match1.homeTeam)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 mx-2">
+                                <span className={`text-lg font-black w-7 text-center ${winner1 === match1.homeTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match1.homeScore ?? '-'}</span>
+                                <span className="text-text-muted text-xs">:</span>
+                                <span className={`text-lg font-black w-7 text-center ${winner1 === match1.awayTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match1.awayScore ?? '-'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-1 justify-end">
+                                <span className={`text-sm font-bold ${winner1 === match1.awayTeam ? 'text-emerald-500' : winner1 === match1.homeTeam ? 'text-text-muted' : 'text-text-primary'}`}>
+                                  {homeScoreReplacement(away1?.name || match1.awayTeam)}
+                                </span>
+                                <img src={`https://flagcdn.com/w40/${match1.awayTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
+                              </div>
+                            </div>
+                          </div>
 
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs border-collapse">
-                                <thead>
-                                  <tr className="text-text-muted font-bold border-b border-border-color">
-                                    <th className="py-2.5 px-2 text-center w-8">#</th>
-                                    <th className="py-2.5 px-2">Selección</th>
-                                    <th className="py-2.5 px-2 text-center w-10">PJ</th>
-                                    <th className="py-2.5 px-1 text-center w-8">G</th>
-                                    <th className="py-2.5 px-1 text-center w-8">E</th>
-                                    <th className="py-2.5 px-1 text-center w-8">P</th>
-                                    <th className="py-2.5 px-1 text-center w-10">GF</th>
-                                    <th className="py-2.5 px-1 text-center w-10">GC</th>
-                                    <th className="py-2.5 px-2 text-center w-12">DG</th>
-                                    <th className="py-2.5 px-2 text-center w-12 font-black text-indigo-500 dark:text-indigo-400">Pts</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {standings.map((teamStanding, idx) => {
-                                    const isTopTwo = idx < 2;
-                                    return (
-                                      <tr 
-                                        key={teamStanding.teamCode} 
-                                        className={`border-b border-border-color/40 hover:bg-slate-500/10 transition-colors ${
-                                          isTopTwo 
-                                            ? "bg-emerald-500/5 dark:bg-emerald-500/3" 
-                                            : ""
-                                        }`}
-                                      >
-                                        {/* Position */}
-                                        <td className={`py-3 px-2 text-center font-bold ${
-                                          isTopTwo ? "text-emerald-500" : "text-text-muted"
-                                        }`}>
-                                          {idx + 1}
-                                        </td>
-                                        
-                                        {/* Team Name + Flag */}
-                                        <td className="py-3 px-2 font-bold text-text-primary">
-                                          <div className="flex items-center gap-2">
-                                            <img
-                                              src={`https://flagcdn.com/w20/${teamStanding.teamCode}.png`}
-                                              alt={teamStanding.teamName}
-                                              className="w-5 h-3.5 object-cover rounded shadow-sm border border-border-color"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).src =
-                                                  "https://flagcdn.com/w20/un.png";
-                                              }}
-                                            />
-                                            <span className="truncate max-w-[120px] sm:max-w-none">
-                                              {teamStanding.teamName}
-                                            </span>
-                                          </div>
-                                        </td>
-                                        
-                                        {/* PJ */}
-                                        <td className="py-3 px-2 text-center text-text-secondary">{teamStanding.played}</td>
-                                        {/* G */}
-                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.won}</td>
-                                        {/* E */}
-                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.drawn}</td>
-                                        {/* P */}
-                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.lost}</td>
-                                        {/* GF */}
-                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.goalsFor}</td>
-                                        {/* GC */}
-                                        <td className="py-3 px-1 text-center text-text-secondary">{teamStanding.goalsAgainst}</td>
-                                        
-                                        {/* DG */}
-                                        <td className={`py-3 px-2 text-center font-bold ${
-                                          teamStanding.goalDifference > 0 
-                                            ? "text-emerald-500" 
-                                            : teamStanding.goalDifference < 0 
-                                              ? "text-rose-500" 
-                                              : "text-text-muted"
-                                        }`}>
-                                          {teamStanding.goalDifference > 0 ? `+${teamStanding.goalDifference}` : teamStanding.goalDifference}
-                                        </td>
-                                        
-                                        {/* Pts */}
-                                        <td className="py-3 px-2 text-center font-black text-indigo-600 dark:text-indigo-400 bg-indigo-500/5">
-                                          {teamStanding.points}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
+                          {/* Connector */}
+                          <div className="border-t border-border-color border-dashed" />
+
+                          {/* Match 2 */}
+                          <div className={`p-4 ${winner2 ? 'bg-emerald-500/5' : ''}`}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Partido {id2}</span>
+                              {match2.status === 'finished' && (
+                                <span className="text-[10px] font-bold text-emerald-500 uppercase">Finalizado</span>
+                              )}
+                              {match2.status === 'scheduled' && (
+                                <span className="text-[10px] font-bold text-text-muted uppercase">
+                                  {new Date(match2.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
+                                </span>
+                              )}
+                              {match2.status === 'live' && (
+                                <span className="text-[10px] font-bold text-red-500 uppercase animate-pulse">● En Vivo</span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-1">
+                                <img src={`https://flagcdn.com/w40/${match2.homeTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
+                                <span className={`text-sm font-bold ${winner2 === match2.homeTeam ? 'text-emerald-500' : winner2 === match2.awayTeam ? 'text-text-muted' : 'text-text-primary'}`}>
+                                  {homeScoreReplacement(home2?.name || match2.homeTeam)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 mx-2">
+                                <span className={`text-lg font-black w-7 text-center ${winner2 === match2.homeTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match2.homeScore ?? '-'}</span>
+                                <span className="text-text-muted text-xs">:</span>
+                                <span className={`text-lg font-black w-7 text-center ${winner2 === match2.awayTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match2.awayScore ?? '-'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-1 justify-end">
+                                <span className={`text-sm font-bold ${winner2 === match2.awayTeam ? 'text-emerald-500' : winner2 === match2.homeTeam ? 'text-text-muted' : 'text-text-primary'}`}>
+                                  {homeScoreReplacement(away2?.name || match2.awayTeam)}
+                                </span>
+                                <img src={`https://flagcdn.com/w40/${match2.awayTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* QF Preview */}
+                          <div className="border-t border-indigo-500/30 bg-indigo-500/5 p-3">
+                            <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">→ Cuartos de Final</div>
+                            <div className="flex items-center justify-center gap-3 text-sm font-bold text-text-secondary">
+                              {qfHome ? (
+                                <div className="flex items-center gap-1.5">
+                                  <img src={`https://flagcdn.com/w20/${qfHome.code}.png`} className="w-5 h-3.5 object-cover rounded-xs border border-border-color" alt="" />
+                                  <span className="text-emerald-500">{homeScoreReplacement(qfHome.name)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {id1}</span>
+                              )}
+                              <span className="text-text-muted text-xs">vs</span>
+                              {qfAway ? (
+                                <div className="flex items-center gap-1.5">
+                                  <img src={`https://flagcdn.com/w20/${qfAway.code}.png`} className="w-5 h-3.5 object-cover rounded-xs border border-border-color" alt="" />
+                                  <span className="text-emerald-500">{homeScoreReplacement(qfAway.name)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {id2}</span>
+                              )}
                             </div>
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Cuartos de Final */}
+                <div>
+                  <h2 className="text-2xl font-black text-text-primary mb-6 flex items-center gap-3">
+                    <Trophy className="w-6 h-6 text-amber-500" />
+                    Cuartos de Final
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[0, 1, 2, 3].map(qfIdx => {
+                      const pair1 = BRACKET_R16_PAIRS[qfIdx * 2];
+                      const pair2 = BRACKET_R16_PAIRS[qfIdx * 2 + 1];
+                      const m1a = matches.find(m => m.id === pair1[0]);
+                      const m1b = matches.find(m => m.id === pair1[1]);
+                      const m2a = matches.find(m => m.id === pair2[0]);
+                      const m2b = matches.find(m => m.id === pair2[1]);
+
+                      const w1a = m1a ? getMatchWinner(m1a) : null;
+                      const w1b = m1b ? getMatchWinner(m1b) : null;
+                      const w2a = m2a ? getMatchWinner(m2a) : null;
+                      const w2b = m2b ? getMatchWinner(m2b) : null;
+
+                      const qf1Home = w1a ? TEAMS.find(t => t.code === w1a) : null;
+                      const qf1Away = w1b ? TEAMS.find(t => t.code === w1b) : null;
+                      const qf2Home = w2a ? TEAMS.find(t => t.code === w2a) : null;
+                      const qf2Away = w2b ? TEAMS.find(t => t.code === w2b) : null;
+
+                      return (
+                        <div key={qfIdx} className={`${CARD_STYLE} !p-0 overflow-hidden`}>
+                          {/* QF Match 1 */}
+                          <div className="p-4">
+                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block mb-2">Cuarto de Final {qfIdx * 2 + 1}</span>
+                            <div className="flex items-center justify-center gap-4 text-sm font-bold">
+                              {qf1Home ? (
+                                <div className="flex items-center gap-2">
+                                  <img src={`https://flagcdn.com/w40/${qf1Home.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
+                                  <span className="text-text-primary">{homeScoreReplacement(qf1Home.name)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {pair1[0]}</span>
+                              )}
+                              <span className="text-text-muted">vs</span>
+                              {qf1Away ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-text-primary">{homeScoreReplacement(qf1Away.name)}</span>
+                                  <img src={`https://flagcdn.com/w40/${qf1Away.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {pair1[1]}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="border-t border-border-color border-dashed" />
+
+                          {/* QF Match 2 */}
+                          <div className="p-4">
+                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block mb-2">Cuarto de Final {qfIdx * 2 + 2}</span>
+                            <div className="flex items-center justify-center gap-4 text-sm font-bold">
+                              {qf2Home ? (
+                                <div className="flex items-center gap-2">
+                                  <img src={`https://flagcdn.com/w40/${qf2Home.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
+                                  <span className="text-text-primary">{homeScoreReplacement(qf2Home.name)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {pair2[0]}</span>
+                              )}
+                              <span className="text-text-muted">vs</span>
+                              {qf2Away ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-text-primary">{homeScoreReplacement(qf2Away.name)}</span>
+                                  <img src={`https://flagcdn.com/w40/${qf2Away.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
+                                </div>
+                              ) : (
+                                <span className="text-text-muted italic text-xs">Ganador {pair2[1]}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* SF Preview */}
+                          <div className="border-t border-amber-500/30 bg-amber-500/5 p-3">
+                            <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">→ Semifinal</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Semifinal & Final placeholders */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={`${CARD_STYLE} text-center`}>
+                    <h3 className="text-lg font-black text-text-primary mb-2 flex items-center justify-center gap-2">
+                      <Trophy className="w-5 h-5 text-purple-500" /> Semifinal
+                    </h3>
+                    <p className="text-sm text-text-muted italic">Por definir</p>
+                  </div>
+                  <div className={`${CARD_STYLE} text-center`}>
+                    <h3 className="text-lg font-black text-text-primary mb-2 flex items-center justify-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-400" /> Final
+                    </h3>
+                    <p className="text-sm text-text-muted italic">Por definir</p>
                   </div>
                 </div>
               </div>
