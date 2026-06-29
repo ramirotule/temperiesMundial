@@ -2382,7 +2382,7 @@ export default function App() {
                   </h3>
 
                   <div className="divide-y divide-border-color/50 space-y-4">
-                    {matches.map((match) => {
+                    {matches.filter((match) => match.homeScore === null || match.awayScore === null).map((match) => {
                       const homeTeam = TEAMS.find(
                         (t) => t.code === match.homeTeam,
                       );
