@@ -394,7 +394,7 @@ export default function App() {
   // View tabs: 'matches' | 'leaderboard' | 'rules' | 'groupStandings' | 'admin'
   const [activeTab, setActiveTab] = useState<
     "matches" | "leaderboard" | "rules" | "groupStandings" | "admin" | "knockout"
-  >("matches");
+  >("knockout");
 
   type StatModalType = "puntos" | "exacto" | "diferencia" | "resultado" | "pronosticados" | null;
   const [activeStatModal, setActiveStatModal] = useState<StatModalType>(null);
