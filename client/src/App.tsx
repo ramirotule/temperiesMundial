@@ -45,6 +45,7 @@ const BTN_SECONDARY =
 
 const KNOCKOUT_PHASES: Record<string, string> = {
   R16: '16avos de Final',
+  R8: 'Octavos de Final',
   QF: 'Cuartos de Final',
   SF: 'Semifinal',
   '3P': 'Tercer Puesto',
@@ -53,17 +54,32 @@ const KNOCKOUT_PHASES: Record<string, string> = {
 
 const GROUP_CODES = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
-// R16 match pairs → QF matchups
-const BRACKET_R16_PAIRS: [string, string][] = [
-  ['M73', 'M74'], // Canada/Sudáfrica vs Brasil/Japón
-  ['M75', 'M76'], // Alemania/Paraguay vs Países Bajos/Marruecos
-  ['M77', 'M78'], // Costa de Marfil/Noruega vs Francia/Suecia
-  ['M79', 'M80'], // México/Ecuador vs Inglaterra/RD Congo
-  ['M81', 'M82'], // Bélgica/Senegal vs Estados Unidos/Bosnia
-  ['M83', 'M84'], // España/Austria vs Portugal/Croacia
-  ['M85', 'M86'], // Suiza/Argelia vs Australia/Egipto
-  ['M87', 'M88'], // Argentina/Cabo Verde vs Colombia/Ghana
+// Full bracket: R16 pairs → Octavos → Cuartos → Semi → Final
+// Each pair: [matchA, matchB] → winners play each other in Octavos
+const BRACKET_OCTAVOS: [string, string][] = [
+  ['M75', 'M78'], // Oct 1: Alemania/Paraguay vs Francia/Suecia
+  ['M73', 'M76'], // Oct 2: Canadá/Sudáfrica vs Holanda/Marruecos
+  ['M84', 'M83'], // Oct 3: Portugal/Croacia vs España/Austria
+  ['M82', 'M81'], // Oct 4: EEUU/Bosnia vs Bélgica/Senegal
+  ['M74', 'M77'], // Oct 5: Brasil/Japón vs C.Marfil/Noruega
+  ['M79', 'M80'], // Oct 6: México/Ecuador vs Inglaterra/RD Congo
+  ['M87', 'M86'], // Oct 7: Argentina/C.Verde vs Australia/Egipto
+  ['M85', 'M88'], // Oct 8: Suiza/Argelia vs Colombia/Ghana
 ];
+
+// Bracket sides for display
+const BRACKET_SIDES = {
+  left: {
+    label: 'Llave Izquierda',
+    upper: { octavos: [0, 1], label: 'Bloque Superior' },  // Oct 1,2 → QF1
+    lower: { octavos: [2, 3], label: 'Bloque Inferior' },  // Oct 3,4 → QF2
+  },
+  right: {
+    label: 'Llave Derecha',
+    upper: { octavos: [4, 5], label: 'Bloque Superior' },  // Oct 5,6 → QF3
+    lower: { octavos: [6, 7], label: 'Bloque Inferior' },  // Oct 7,8 → QF4
+  },
+};
 
 // World Cup group standings calculation & simulation engine
 function computeGroupStandingsForGroup(
@@ -2088,242 +2104,267 @@ export default function App() {
             )}
 
             {/* TAB: BRACKET / LLAVES */}
-            {activeTab === "groupStandings" && (
-              <div className="space-y-10">
-                {/* 16avos de Final */}
-                <div>
-                  <h2 className="text-2xl font-black text-text-primary mb-6 flex items-center gap-3">
-                    <Trophy className="w-6 h-6 text-indigo-500" />
-                    16avos de Final
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {BRACKET_R16_PAIRS.map(([id1, id2], pairIdx) => {
-                      const match1 = matches.find(m => m.id === id1);
-                      const match2 = matches.find(m => m.id === id2);
-                      if (!match1 || !match2) return null;
+            {activeTab === "groupStandings" && (() => {
+              // ── helpers scoped to this tab ──────────────────────────────────
+              const getWinnerCode = (matchId: string): string | null => {
+                const m = matches.find(x => x.id === matchId);
+                return m ? getMatchWinner(m) : null;
+              };
 
-                      const winner1 = getMatchWinner(match1);
-                      const winner2 = getMatchWinner(match2);
-                      const home1 = TEAMS.find(t => t.code === match1.homeTeam);
-                      const away1 = TEAMS.find(t => t.code === match1.awayTeam);
-                      const home2 = TEAMS.find(t => t.code === match2.homeTeam);
-                      const away2 = TEAMS.find(t => t.code === match2.awayTeam);
+              // R16 match cell — both teams stacked, flag + name + score
+              const R16Cell = ({ matchId, mirrored }: { matchId: string; mirrored?: boolean }) => {
+                const m = matches.find(x => x.id === matchId);
+                if (!m) return (
+                  <div className="w-44 shrink-0 rounded-lg border border-border-color bg-bg-card/40 px-2 py-1.5 text-center">
+                    <span className="text-[10px] text-text-muted italic">{matchId}</span>
+                  </div>
+                );
+                const winner = getMatchWinner(m);
+                const teams = [
+                  { code: m.homeTeam, score: m.homeScore, team: TEAMS.find(t => t.code === m.homeTeam) },
+                  { code: m.awayTeam, score: m.awayScore, team: TEAMS.find(t => t.code === m.awayTeam) },
+                ];
 
-                      const qfHome = winner1 ? TEAMS.find(t => t.code === winner1) : null;
-                      const qfAway = winner2 ? TEAMS.find(t => t.code === winner2) : null;
-
+                return (
+                  <div className="w-44 shrink-0 rounded-lg border border-border-color bg-bg-card/60 overflow-hidden backdrop-blur-sm">
+                    <div className={`px-2 py-0.5 flex items-center justify-between ${mirrored ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider">{matchId}</span>
+                      {m.status === 'live' && <span className="text-[9px] font-bold text-red-400 animate-pulse">● VIVO</span>}
+                      {m.status === 'finished' && <span className="text-[9px] font-bold text-emerald-500/70">FIN</span>}
+                    </div>
+                    {teams.map(({ code, score, team }, i) => {
+                      const isWinner = winner === code;
+                      const isLoser = !!winner && !isWinner;
                       return (
-                        <div key={pairIdx} className={`${CARD_STYLE} !p-0 overflow-hidden`}>
-                          {/* Match 1 */}
-                          <div className={`p-4 ${winner1 ? 'bg-emerald-500/5' : ''}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Partido {id1}</span>
-                              {match1.status === 'finished' && (
-                                <span className="text-[10px] font-bold text-emerald-500 uppercase">Finalizado</span>
-                              )}
-                              {match1.status === 'scheduled' && (
-                                <span className="text-[10px] font-bold text-text-muted uppercase">
-                                  {new Date(match1.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
-                                </span>
-                              )}
-                              {match1.status === 'live' && (
-                                <span className="text-[10px] font-bold text-red-500 uppercase animate-pulse">● En Vivo</span>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 flex-1">
-                                <img src={`https://flagcdn.com/w40/${match1.homeTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
-                                <span className={`text-sm font-bold ${winner1 === match1.homeTeam ? 'text-emerald-500' : winner1 === match1.awayTeam ? 'text-text-muted' : 'text-text-primary'}`}>
-                                  {homeScoreReplacement(home1?.name || match1.homeTeam)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 mx-2">
-                                <span className={`text-lg font-black w-7 text-center ${winner1 === match1.homeTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match1.homeScore ?? '-'}</span>
-                                <span className="text-text-muted text-xs">:</span>
-                                <span className={`text-lg font-black w-7 text-center ${winner1 === match1.awayTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match1.awayScore ?? '-'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 flex-1 justify-end">
-                                <span className={`text-sm font-bold ${winner1 === match1.awayTeam ? 'text-emerald-500' : winner1 === match1.homeTeam ? 'text-text-muted' : 'text-text-primary'}`}>
-                                  {homeScoreReplacement(away1?.name || match1.awayTeam)}
-                                </span>
-                                <img src={`https://flagcdn.com/w40/${match1.awayTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Connector */}
-                          <div className="border-t border-border-color border-dashed" />
-
-                          {/* Match 2 */}
-                          <div className={`p-4 ${winner2 ? 'bg-emerald-500/5' : ''}`}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Partido {id2}</span>
-                              {match2.status === 'finished' && (
-                                <span className="text-[10px] font-bold text-emerald-500 uppercase">Finalizado</span>
-                              )}
-                              {match2.status === 'scheduled' && (
-                                <span className="text-[10px] font-bold text-text-muted uppercase">
-                                  {new Date(match2.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} hs
-                                </span>
-                              )}
-                              {match2.status === 'live' && (
-                                <span className="text-[10px] font-bold text-red-500 uppercase animate-pulse">● En Vivo</span>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 flex-1">
-                                <img src={`https://flagcdn.com/w40/${match2.homeTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
-                                <span className={`text-sm font-bold ${winner2 === match2.homeTeam ? 'text-emerald-500' : winner2 === match2.awayTeam ? 'text-text-muted' : 'text-text-primary'}`}>
-                                  {homeScoreReplacement(home2?.name || match2.homeTeam)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 mx-2">
-                                <span className={`text-lg font-black w-7 text-center ${winner2 === match2.homeTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match2.homeScore ?? '-'}</span>
-                                <span className="text-text-muted text-xs">:</span>
-                                <span className={`text-lg font-black w-7 text-center ${winner2 === match2.awayTeam ? 'text-emerald-500' : 'text-text-primary'}`}>{match2.awayScore ?? '-'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 flex-1 justify-end">
-                                <span className={`text-sm font-bold ${winner2 === match2.awayTeam ? 'text-emerald-500' : winner2 === match2.homeTeam ? 'text-text-muted' : 'text-text-primary'}`}>
-                                  {homeScoreReplacement(away2?.name || match2.awayTeam)}
-                                </span>
-                                <img src={`https://flagcdn.com/w40/${match2.awayTeam}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/un.png'; }} />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* QF Preview */}
-                          <div className="border-t border-indigo-500/30 bg-indigo-500/5 p-3">
-                            <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">→ Cuartos de Final</div>
-                            <div className="flex items-center justify-center gap-3 text-sm font-bold text-text-secondary">
-                              {qfHome ? (
-                                <div className="flex items-center gap-1.5">
-                                  <img src={`https://flagcdn.com/w20/${qfHome.code}.png`} className="w-5 h-3.5 object-cover rounded-xs border border-border-color" alt="" />
-                                  <span className="text-emerald-500">{homeScoreReplacement(qfHome.name)}</span>
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {id1}</span>
-                              )}
-                              <span className="text-text-muted text-xs">vs</span>
-                              {qfAway ? (
-                                <div className="flex items-center gap-1.5">
-                                  <img src={`https://flagcdn.com/w20/${qfAway.code}.png`} className="w-5 h-3.5 object-cover rounded-xs border border-border-color" alt="" />
-                                  <span className="text-emerald-500">{homeScoreReplacement(qfAway.name)}</span>
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {id2}</span>
-                              )}
-                            </div>
-                          </div>
+                        <div key={code} className={`flex items-center gap-1.5 px-2 py-1 ${i === 0 ? 'border-b border-border-color/40' : ''} ${isWinner ? 'bg-emerald-500/10' : ''} ${mirrored ? 'flex-row-reverse' : ''}`}>
+                          <img
+                            src={`https://flagcdn.com/w20/${code}.png`}
+                            className="w-5 h-3.5 object-cover rounded-sm border border-border-color/50 shrink-0"
+                            alt=""
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }}
+                          />
+                          <span className={`text-[11px] font-semibold flex-1 truncate ${isWinner ? 'text-emerald-400' : isLoser ? 'text-text-muted' : 'text-text-primary'} ${mirrored ? 'text-right' : ''}`}>
+                            {homeScoreReplacement(team?.name || code)}
+                          </span>
+                          {m.status !== 'scheduled' && (
+                            <span className={`text-[11px] font-black shrink-0 ${isWinner ? 'text-emerald-400' : 'text-text-muted'}`}>
+                              {score ?? '-'}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
+                );
+              };
+
+              // A single slot for rounds beyond R16 (Octavos / Cuartos / Semi / Final)
+              const RoundSlot = ({
+                teamCode,
+                label,
+                accent = 'indigo',
+                mirrored,
+                isChampion,
+              }: {
+                teamCode: string | null;
+                label: string;
+                accent?: 'indigo' | 'amber' | 'purple' | 'emerald';
+                mirrored?: boolean;
+                isChampion?: boolean;
+              }) => {
+                const team = teamCode ? TEAMS.find(t => t.code === teamCode) : null;
+                const accentMap: Record<string, string> = {
+                  indigo: 'border-indigo-500/30 bg-indigo-500/5',
+                  amber: 'border-amber-400/40 bg-amber-500/5',
+                  purple: 'border-purple-500/30 bg-purple-500/5',
+                  emerald: 'border-emerald-500/40 bg-emerald-500/8',
+                };
+                const labelMap: Record<string, string> = {
+                  indigo: 'text-indigo-400',
+                  amber: 'text-amber-400',
+                  purple: 'text-purple-400',
+                  emerald: 'text-emerald-400',
+                };
+                return (
+                  <div className={`w-36 shrink-0 rounded-lg border ${accentMap[accent]} px-2 py-2 backdrop-blur-sm`}>
+                    <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 ${labelMap[accent]} ${mirrored ? 'text-right' : ''}`}>{label}</div>
+                    {team ? (
+                      <div className={`flex items-center gap-1.5 ${mirrored ? 'flex-row-reverse' : ''}`}>
+                        <img
+                          src={`https://flagcdn.com/w20/${team.code}.png`}
+                          className="w-5 h-3.5 object-cover rounded-sm border border-border-color/50 shrink-0"
+                          alt=""
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }}
+                        />
+                        <span className={`text-[11px] font-bold truncate ${isChampion ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {homeScoreReplacement(team.name)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className={`text-[11px] text-text-muted italic ${mirrored ? 'text-right' : ''}`}>Por definir</div>
+                    )}
+                  </div>
+                );
+              };
+
+              // Bracket connector — the "]" / "[" lines between rounds
+              const Connector = ({ top, mirrored }: { top?: boolean; mirrored?: boolean }) => (
+                <div className="w-4 shrink-0 self-stretch flex flex-col">
+                  <div className={`flex-1 border-indigo-500/40 ${mirrored
+                    ? top ? 'border-b border-l' : 'border-t border-l'
+                    : top ? 'border-b border-r' : 'border-t border-r'
+                  }`} />
                 </div>
+              );
 
-                {/* Cuartos de Final */}
-                <div>
-                  <h2 className="text-2xl font-black text-text-primary mb-6 flex items-center gap-3">
-                    <Trophy className="w-6 h-6 text-amber-500" />
-                    Cuartos de Final
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[0, 1, 2, 3].map(qfIdx => {
-                      const pair1 = BRACKET_R16_PAIRS[qfIdx * 2];
-                      const pair2 = BRACKET_R16_PAIRS[qfIdx * 2 + 1];
-                      const m1a = matches.find(m => m.id === pair1[0]);
-                      const m1b = matches.find(m => m.id === pair1[1]);
-                      const m2a = matches.find(m => m.id === pair2[0]);
-                      const m2b = matches.find(m => m.id === pair2[1]);
+              // A pair of R16 matches connected to their Octavos slot
+              const R16Pair = ({
+                matchIds,
+                octWinner,
+                mirrored,
+              }: {
+                matchIds: [string, string];
+                octWinner: string | null;
+                mirrored?: boolean;
+              }) => {
+                const octLabel = mirrored ? 'Octavos ←' : 'Octavos →';
+                return (
+                  <div className={`flex items-center gap-0 ${mirrored ? 'flex-row-reverse' : ''}`}>
+                    {/* R16 matches stacked */}
+                    <div className="flex flex-col gap-2">
+                      <R16Cell matchId={matchIds[0]} mirrored={mirrored} />
+                      <R16Cell matchId={matchIds[1]} mirrored={mirrored} />
+                    </div>
+                    {/* connectors to octavos */}
+                    <div className={`flex flex-col self-stretch ${mirrored ? 'flex-row-reverse' : ''}`}>
+                      <Connector top mirrored={mirrored} />
+                      <Connector mirrored={mirrored} />
+                    </div>
+                    {/* octavos slot */}
+                    <RoundSlot teamCode={octWinner} label={octLabel} accent="indigo" mirrored={mirrored} />
+                  </div>
+                );
+              };
 
-                      const w1a = m1a ? getMatchWinner(m1a) : null;
-                      const w1b = m1b ? getMatchWinner(m1b) : null;
-                      const w2a = m2a ? getMatchWinner(m2a) : null;
-                      const w2b = m2b ? getMatchWinner(m2b) : null;
+              // Build octavos winners (R16 winners advance to octavos)
+              const octWinners = BRACKET_OCTAVOS.map(([m1, m2]) => {
+                const w1 = getWinnerCode(m1);
+                const w2 = getWinnerCode(m2);
+                // Both must be determined for octavos match to exist
+                return { w1, w2 };
+              });
 
-                      const qf1Home = w1a ? TEAMS.find(t => t.code === w1a) : null;
-                      const qf1Away = w1b ? TEAMS.find(t => t.code === w1b) : null;
-                      const qf2Home = w2a ? TEAMS.find(t => t.code === w2a) : null;
-                      const qf2Away = w2b ? TEAMS.find(t => t.code === w2b) : null;
+              // For bracket display: octavos match winner is tracked via a future match
+              // For now we display the two R16 winners as the octavos participants
+              // and leave cuartos/semi/final as "Por definir" (no octavos/cuartos matches yet)
 
-                      return (
-                        <div key={qfIdx} className={`${CARD_STYLE} !p-0 overflow-hidden`}>
-                          {/* QF Match 1 */}
-                          <div className="p-4">
-                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block mb-2">Cuarto de Final {qfIdx * 2 + 1}</span>
-                            <div className="flex items-center justify-center gap-4 text-sm font-bold">
-                              {qf1Home ? (
-                                <div className="flex items-center gap-2">
-                                  <img src={`https://flagcdn.com/w40/${qf1Home.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
-                                  <span className="text-text-primary">{homeScoreReplacement(qf1Home.name)}</span>
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {pair1[0]}</span>
-                              )}
-                              <span className="text-text-muted">vs</span>
-                              {qf1Away ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-text-primary">{homeScoreReplacement(qf1Away.name)}</span>
-                                  <img src={`https://flagcdn.com/w40/${qf1Away.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {pair1[1]}</span>
-                              )}
+              // Left side: indices 0-3 → upper block (0,1) + lower block (2,3)
+              // Right side: indices 4-7 → upper block (4,5) + lower block (6,7)
+
+              const BracketHalf = ({ indices, mirrored }: { indices: [number, number, number, number]; mirrored?: boolean }) => {
+                const [i0, i1, i2, i3] = indices;
+                const oct0Winner = octWinners[i0];
+                const oct1Winner = octWinners[i1];
+                const oct2Winner = octWinners[i2];
+                const oct3Winner = octWinners[i3];
+
+                const qfLabel = mirrored ? 'Cuartos ←' : 'Cuartos →';
+                const sfLabel = mirrored ? 'Semi ←' : 'Semi →';
+
+                return (
+                  <div className={`flex items-center gap-0 ${mirrored ? 'flex-row-reverse' : ''}`}>
+                    {/* Upper + Lower R16 pairs → Octavos → Cuartos → Semi */}
+                    <div className="flex flex-col gap-3">
+                      {/* Upper block */}
+                      <div className="flex flex-col gap-2">
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i0]} octWinner={oct0Winner.w1 && oct0Winner.w2 ? null : (oct0Winner.w1 ?? oct0Winner.w2)} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i1]} octWinner={oct1Winner.w1 && oct1Winner.w2 ? null : (oct1Winner.w1 ?? oct1Winner.w2)} mirrored={mirrored} />
+                      </div>
+                      {/* Lower block */}
+                      <div className="flex flex-col gap-2">
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i2]} octWinner={oct2Winner.w1 && oct2Winner.w2 ? null : (oct2Winner.w1 ?? oct2Winner.w2)} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i3]} octWinner={oct3Winner.w1 && oct3Winner.w2 ? null : (oct3Winner.w1 ?? oct3Winner.w2)} mirrored={mirrored} />
+                      </div>
+                    </div>
+
+                    {/* Connectors upper+lower octavos → cuartos */}
+                    <div className="flex flex-col self-stretch">
+                      <Connector top mirrored={mirrored} />
+                      <Connector mirrored={mirrored} />
+                    </div>
+
+                    {/* Cuartos column: 2 slots */}
+                    <div className="flex flex-col gap-3 justify-around self-stretch py-4">
+                      <RoundSlot teamCode={null} label={qfLabel} accent="amber" mirrored={mirrored} />
+                      <RoundSlot teamCode={null} label={qfLabel} accent="amber" mirrored={mirrored} />
+                    </div>
+
+                    {/* Connectors cuartos → semi */}
+                    <div className="flex flex-col self-stretch">
+                      <Connector top mirrored={mirrored} />
+                      <Connector mirrored={mirrored} />
+                    </div>
+
+                    {/* Semi */}
+                    <div className="flex flex-col justify-center self-stretch py-4">
+                      <RoundSlot teamCode={null} label={sfLabel} accent="purple" mirrored={mirrored} />
+                    </div>
+
+                    {/* Connector semi → final */}
+                    <div className="w-4 shrink-0 self-stretch border-t-0 border-b-0">
+                      <div className={`h-full ${mirrored ? 'border-l' : 'border-r'} border-indigo-500/40`} />
+                    </div>
+                  </div>
+                );
+              };
+
+              return (
+                <div className="relative left-1/2 -translate-x-1/2 w-screen">
+                  {/* Mobile hint */}
+                  <p className="lg:hidden text-xs text-text-muted text-center mb-3 italic px-4">
+                    Deslizá para ver el cuadro completo →
+                  </p>
+
+                  {/* Bracket container — breaks out of max-w-7xl */}
+                  <div className="overflow-x-auto pb-4 px-4">
+                    <div className="mx-auto" style={{ width: 'fit-content' }}>
+                      {/* Title */}
+                      <div className="flex items-center justify-center gap-3 mb-6">
+                        <Trophy className="w-6 h-6 text-amber-400" />
+                        <h2 className="text-xl font-black text-text-primary uppercase tracking-wider">Llaves del Mundial 2026</h2>
+                        <Trophy className="w-6 h-6 text-amber-400" />
+                      </div>
+
+                      {/* Main bracket */}
+                      <div className="flex items-center justify-center gap-0">
+                        {/* Left bracket */}
+                        <BracketHalf indices={[0, 1, 2, 3]} />
+
+                        {/* Final */}
+                        <div className="flex flex-col items-center justify-center px-2 self-stretch py-4">
+                          <div className="w-36 shrink-0 rounded-xl border-2 border-amber-400/50 bg-amber-500/8 backdrop-blur-sm px-3 py-3 text-center shadow-lg shadow-amber-500/10">
+                            <div className="flex items-center justify-center gap-1.5 mb-2">
+                              <Trophy className="w-4 h-4 text-amber-400" />
+                              <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Final</span>
                             </div>
-                          </div>
-
-                          <div className="border-t border-border-color border-dashed" />
-
-                          {/* QF Match 2 */}
-                          <div className="p-4">
-                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider block mb-2">Cuarto de Final {qfIdx * 2 + 2}</span>
-                            <div className="flex items-center justify-center gap-4 text-sm font-bold">
-                              {qf2Home ? (
-                                <div className="flex items-center gap-2">
-                                  <img src={`https://flagcdn.com/w40/${qf2Home.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
-                                  <span className="text-text-primary">{homeScoreReplacement(qf2Home.name)}</span>
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {pair2[0]}</span>
-                              )}
-                              <span className="text-text-muted">vs</span>
-                              {qf2Away ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-text-primary">{homeScoreReplacement(qf2Away.name)}</span>
-                                  <img src={`https://flagcdn.com/w40/${qf2Away.code}.png`} className="w-8 h-5 object-cover rounded border border-border-color" alt="" />
-                                </div>
-                              ) : (
-                                <span className="text-text-muted italic text-xs">Ganador {pair2[1]}</span>
-                              )}
+                            <div className="border-t border-amber-400/20 pt-2 mb-1.5">
+                              <div className="text-[11px] text-text-muted italic">Por definir</div>
                             </div>
-                          </div>
-
-                          {/* SF Preview */}
-                          <div className="border-t border-amber-500/30 bg-amber-500/5 p-3">
-                            <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">→ Semifinal</div>
+                            <div className="text-[10px] text-text-muted">vs</div>
+                            <div className="mt-1.5">
+                              <div className="text-[11px] text-text-muted italic">Por definir</div>
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Semifinal & Final placeholders */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className={`${CARD_STYLE} text-center`}>
-                    <h3 className="text-lg font-black text-text-primary mb-2 flex items-center justify-center gap-2">
-                      <Trophy className="w-5 h-5 text-purple-500" /> Semifinal
-                    </h3>
-                    <p className="text-sm text-text-muted italic">Por definir</p>
-                  </div>
-                  <div className={`${CARD_STYLE} text-center`}>
-                    <h3 className="text-lg font-black text-text-primary mb-2 flex items-center justify-center gap-2">
-                      <Trophy className="w-5 h-5 text-amber-400" /> Final
-                    </h3>
-                    <p className="text-sm text-text-muted italic">Por definir</p>
+                        {/* Right bracket */}
+                        <BracketHalf indices={[4, 5, 6, 7]} mirrored />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* TAB: LEADERBOARD */}
             {activeTab === "leaderboard" && (
