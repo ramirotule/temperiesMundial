@@ -18,7 +18,7 @@ import {
   BarChart2,
   X,
 } from "lucide-react";
-import type { Match, Prediction, User, UserState, Team, TeamStanding } from "./types";
+import type { Match, Prediction, User, UserState } from "./types";
 import { TEAMS } from "./data/db";
 import {
   authenticate,
