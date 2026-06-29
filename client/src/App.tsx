@@ -393,14 +393,13 @@ export default function App() {
 
   // View tabs: 'matches' | 'leaderboard' | 'rules' | 'groupStandings' | 'admin'
   const [activeTab, setActiveTab] = useState<
-    "matches" | "leaderboard" | "rules" | "groupStandings" | "admin" | "knockout"
-  >("knockout");
+    "matches" | "leaderboard" | "rules" | "groupStandings" | "admin"
+  >("matches");
 
   type StatModalType = "puntos" | "exacto" | "diferencia" | "resultado" | "pronosticados" | null;
   const [activeStatModal, setActiveStatModal] = useState<StatModalType>(null);
 
   // Filters for matches
-  const [groupFilter, setGroupFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [showTodayOnly, setShowTodayOnly] = useState<boolean>(false);
   const [showFinished, setShowFinished] = useState<boolean>(false);
@@ -1359,7 +1358,7 @@ export default function App() {
                       : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
                   }`}
                 >
-                  <Calendar className="w-4 h-4" /> Partidos
+                  <Award className="w-4 h-4" /> Decisivos
                 </button>
 
                 <button
@@ -1371,17 +1370,6 @@ export default function App() {
                   }`}
                 >
                   <Trophy className="w-4 h-4" /> Posiciones Mundial
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("knockout")}
-                  className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    activeTab === "knockout"
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                      : "text-text-muted hover:text-text-primary hover:bg-bg-card border border-transparent hover:border-border-color"
-                  }`}
-                >
-                  <Award className="w-4 h-4" /> Decisivos
                 </button>
 
                 <button
@@ -1429,40 +1417,6 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                        Grupo:
-                      </span>
-                      <select
-                        className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500"
-                        value={groupFilter}
-                        onChange={(e) => {
-                          setGroupFilter(e.target.value);
-                          setTeamSearch("");
-                        }}
-                      >
-                        <option value="All">Todos los Grupos</option>
-                        {[
-                          "A",
-                          "B",
-                          "C",
-                          "D",
-                          "E",
-                          "F",
-                          "G",
-                          "H",
-                          "I",
-                          "J",
-                          "K",
-                          "L",
-                        ].map((g) => (
-                          <option key={g} value={g}>
-                            Grupo {g}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                         Estado:
                       </span>
                       <select
@@ -1489,7 +1443,6 @@ export default function App() {
                           setTeamSearch(val);
                           if (val.trim()) {
                             setShowTodayOnly(false);
-                            setGroupFilter("All");
                           }
                         }}
                         className="bg-bg-input border border-border-color rounded-lg px-3 py-1.5 text-xs font-bold text-text-primary focus:outline-none focus:border-indigo-500 placeholder-text-muted/40 w-36 sm:w-44 transition-all"
@@ -1534,10 +1487,7 @@ export default function App() {
                 {/* Matches Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {matches
-                    .filter((m) => GROUP_CODES.includes(m.group))
-                    .filter(
-                      (m) => groupFilter === "All" || m.group === groupFilter,
-                    )
+                    .filter((m) => !GROUP_CODES.includes(m.group))
                     .filter(
                       (m) =>
                         statusFilter === "All" || m.status === statusFilter,
@@ -1604,8 +1554,8 @@ export default function App() {
                         >
                           {/* Top Status Indicators */}
                           <div className="flex items-center justify-between mb-4">
-                            <span className="text-[11px] font-bold tracking-widest text-text-muted uppercase">
-                              Grupo {match.group}
+                            <span className="text-[11px] font-bold tracking-widest text-indigo-500 uppercase">
+                              {KNOCKOUT_PHASES[match.group] || match.group}
                             </span>
 
                             {/* Badges */}
@@ -1842,258 +1792,6 @@ export default function App() {
                       );
                     })}
                 </div>
-              </div>
-            )}
-
-            {/* TAB: KNOCKOUT / DECISIVOS */}
-            {activeTab === "knockout" && (
-              <div className="space-y-8">
-                {Object.entries(KNOCKOUT_PHASES)
-                  .filter(([phaseCode]) => matches.some(m => m.group === phaseCode))
-                  .map(([phaseCode, phaseLabel]) => {
-                    const phaseMatches = matches
-                      .filter(m => m.group === phaseCode)
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                    // Group by day (Argentina timezone)
-                    const byDay: Record<string, Match[]> = {};
-                    phaseMatches.forEach(m => {
-                      const dayKey = new Date(m.date).toLocaleDateString('es-AR', {
-                        timeZone: 'America/Argentina/Buenos_Aires',
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                      });
-                      if (!byDay[dayKey]) byDay[dayKey] = [];
-                      byDay[dayKey].push(m);
-                    });
-
-                    return (
-                      <div key={phaseCode}>
-                        <h2 className="text-2xl font-black text-text-primary mb-6 flex items-center gap-3">
-                          <Award className="w-6 h-6 text-indigo-500" />
-                          {phaseLabel}
-                        </h2>
-
-                        {Object.entries(byDay).map(([dayLabel, dayMatches]) => (
-                          <div key={dayLabel} className="mb-6">
-                            <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-4 capitalize">
-                              {dayLabel}
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {dayMatches.map((match) => {
-                                const homeTeam = TEAMS.find(t => t.code === match.homeTeam);
-                                const awayTeam = TEAMS.find(t => t.code === match.awayTeam);
-                                const userPred = predictions[currentUser.id]?.[match.id];
-                                const localEdit = predEdits[match.id] || {
-                                  homeScore: userPred ? userPred.homeScore.toString() : "",
-                                  awayScore: userPred ? userPred.awayScore.toString() : "",
-                                };
-                                const isMatchLocked =
-                                  match.status === "finished" ||
-                                  match.status === "live" ||
-                                  new Date() >= new Date(match.date);
-                                const pointsEarned =
-                                  match.status === "finished"
-                                    ? userPred
-                                      ? calculatePoints(match, userPred)
-                                      : { points: -1, type: "none" as const }
-                                    : null;
-
-                                return (
-                                  <div
-                                    key={match.id}
-                                    className={`${CARD_STYLE} relative flex flex-col justify-between overflow-hidden group hover:border-indigo-500/40 transition-all duration-300 ${!isMatchLocked && !userPred ? "!border-rose-500/40 dark:!border-rose-500/30 ring-1 ring-rose-500/10 shadow-rose-500/5 shadow-md" : ""}`}
-                                  >
-                                    {/* Phase Badge */}
-                                    <div className="flex items-center justify-between mb-4">
-                                      <span className="text-[11px] font-bold tracking-widest text-indigo-500 uppercase">
-                                        {KNOCKOUT_PHASES[match.group] || match.group}
-                                      </span>
-
-                                      {match.status === "live" && (
-                                        <span className="flex items-center gap-1 bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                                          ● EN VIVO
-                                        </span>
-                                      )}
-                                      {match.status === "finished" && (
-                                        <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                          Finalizado
-                                        </span>
-                                      )}
-                                      {match.status === "scheduled" && (
-                                        <span className="bg-bg-input border border-border-color text-text-muted font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                                          <Clock className="w-2.5 h-2.5" /> Pendiente
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Flag and Scores Layout */}
-                                    <div className="flex items-center justify-between my-2">
-                                      <div className="flex flex-col items-center gap-2 flex-1">
-                                        <img
-                                          src={`https://flagcdn.com/w80/${match.homeTeam}.png`}
-                                          alt={homeTeam?.name}
-                                          className="w-12 h-8 object-cover rounded-lg shadow-md border border-border-color"
-                                          onError={(e) => { (e.target as HTMLImageElement).src = "https://flagcdn.com/w80/un.png"; }}
-                                        />
-                                        <span className="text-xs font-bold text-center text-text-secondary w-24 truncate">
-                                          {homeScoreReplacement(homeTeam?.name || match.homeTeam)}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                        {isMatchLocked ? (
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-black text-text-primary w-8 text-center bg-bg-input rounded-lg py-1 border border-border-color">
-                                              {match.homeScore ?? "-"}
-                                            </span>
-                                            <span className="text-text-muted font-bold">:</span>
-                                            <span className="text-2xl font-black text-text-primary w-8 text-center bg-bg-input rounded-lg py-1 border border-border-color">
-                                              {match.awayScore ?? "-"}
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-1.5">
-                                            <input
-                                              type="number"
-                                              min="0"
-                                              placeholder="-"
-                                              value={localEdit.homeScore}
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                setPredEdits((prev) => ({
-                                                  ...prev,
-                                                  [match.id]: {
-                                                    ...(prev[match.id] || { homeScore: "", awayScore: localEdit.awayScore }),
-                                                    homeScore: val,
-                                                  },
-                                                }));
-                                              }}
-                                              className={INPUT_STYLE}
-                                            />
-                                            <span className="text-text-muted font-bold">:</span>
-                                            <input
-                                              type="number"
-                                              min="0"
-                                              placeholder="-"
-                                              value={localEdit.awayScore}
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                setPredEdits((prev) => ({
-                                                  ...prev,
-                                                  [match.id]: {
-                                                    ...(prev[match.id] || { homeScore: localEdit.homeScore, awayScore: "" }),
-                                                    awayScore: val,
-                                                  },
-                                                }));
-                                              }}
-                                              className={INPUT_STYLE}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="flex flex-col items-center gap-2 flex-1">
-                                        <img
-                                          src={`https://flagcdn.com/w80/${match.awayTeam}.png`}
-                                          alt={awayTeam?.name}
-                                          className="w-12 h-8 object-cover rounded-lg shadow-md border border-border-color"
-                                          onError={(e) => { (e.target as HTMLImageElement).src = "https://flagcdn.com/w80/un.png"; }}
-                                        />
-                                        <span className="text-xs font-bold text-center text-text-secondary w-24 truncate">
-                                          {homeScoreReplacement(awayTeam?.name || match.awayTeam)}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Bottom bar: date + prediction */}
-                                    <div className="mt-4 pt-3 border-t border-border-color flex flex-col gap-2">
-                                      <div className="text-xs text-text-muted font-medium flex items-start justify-between gap-2">
-                                        <div className="flex flex-col gap-1">
-                                          <span className="font-bold text-text-secondary text-xs sm:text-sm flex items-center gap-1.5">
-                                            <img src="https://flagcdn.com/w20/ar.png" className="w-4 h-3 object-cover rounded-xs border border-slate-200/20 shadow-xs" alt="AR" />
-                                            <span>
-                                              {new Date(match.date).toLocaleString("es-AR", {
-                                                timeZone: "America/Argentina/Buenos_Aires",
-                                                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
-                                              })}{" "}hs
-                                            </span>
-                                          </span>
-                                          <span className="text-[10px] sm:text-xs text-text-muted flex items-center gap-1.5">
-                                            <img src="https://flagcdn.com/w20/es.png" className="w-4 h-3 object-cover rounded-xs border border-slate-200/20 shadow-xs" alt="ES" />
-                                            <span>
-                                              {new Date(match.date).toLocaleString("es-ES", {
-                                                timeZone: "Europe/Madrid",
-                                                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
-                                              })}{" "}hs
-                                            </span>
-                                          </span>
-                                        </div>
-                                        {match.stadium !== 'TBD' && (
-                                          <span className="truncate max-w-[120px] text-[10px] sm:text-xs self-start text-right">
-                                            {match.stadium}
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      <div className="flex items-center justify-between mt-1 min-h-[36px]">
-                                        <div className="flex flex-col">
-                                          <span className="text-[9px] font-bold text-text-muted uppercase">Tu Pronóstico</span>
-                                          {userPred ? (
-                                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                                              Predijo: {userPred.homeScore} - {userPred.awayScore}
-                                            </span>
-                                          ) : !isMatchLocked ? (
-                                            <span className="text-xs font-black text-rose-500 dark:text-rose-400 flex items-center gap-1 animate-pulse">
-                                              ⚠️ Falta Pronosticar
-                                            </span>
-                                          ) : (
-                                            <span className="text-xs text-text-muted italic">Sin Pronosticar</span>
-                                          )}
-                                        </div>
-
-                                        {isMatchLocked
-                                          ? pointsEarned && (
-                                              <div className={`px-2.5 py-1 rounded-lg border font-bold text-xs flex items-center gap-1 ${
-                                                pointsEarned.points === 5
-                                                  ? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                                                  : pointsEarned.points === 3
-                                                    ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
-                                                    : pointsEarned.points === 2
-                                                      ? "bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-400"
-                                                      : pointsEarned.points === -1
-                                                        ? "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400"
-                                                        : "bg-slate-100 dark:bg-slate-900 border-border-color text-text-muted"
-                                              }`}>
-                                                {pointsEarned.points > 0 ? (
-                                                  <>🎉 +{pointsEarned.points} pts</>
-                                                ) : pointsEarned.points === -1 ? (
-                                                  <>⚠️ -1 pt (No pronosticado)</>
-                                                ) : (
-                                                  <>❌ 0 pts</>
-                                                )}
-                                              </div>
-                                            )
-                                          : predEdits[match.id] && (
-                                              <button
-                                                onClick={() => savePrediction(match.id)}
-                                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1 cursor-pointer"
-                                              >
-                                                <Save className="w-3.5 h-3.5" /> {userPred ? "Modificar" : "Guardar"}
-                                              </button>
-                                            )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
               </div>
             )}
 

@@ -4,9 +4,6 @@
 -- =============================================================================
 
 INSERT INTO matches (id, home_team, away_team, date, "group", home_score, away_score, status, stadium) VALUES
-  -- Domingo 28 de junio
-  ('M73', 'ca', 'za', '2026-06-28T19:00:00.000Z', 'R16', NULL, NULL, 'scheduled', 'TBD'),
-
   -- Lunes 29 de junio
   ('M74', 'br', 'jp', '2026-06-29T17:00:00.000Z', 'R16', NULL, NULL, 'scheduled', 'TBD'),
   ('M75', 'de', 'py', '2026-06-29T20:30:00.000Z', 'R16', NULL, NULL, 'scheduled', 'TBD'),
