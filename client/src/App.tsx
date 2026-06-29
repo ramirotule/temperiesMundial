@@ -68,18 +68,6 @@ const BRACKET_OCTAVOS: [string, string][] = [
 ];
 
 // Bracket sides for display
-const BRACKET_SIDES = {
-  left: {
-    label: 'Llave Izquierda',
-    upper: { octavos: [0, 1], label: 'Bloque Superior' },  // Oct 1,2 → QF1
-    lower: { octavos: [2, 3], label: 'Bloque Inferior' },  // Oct 3,4 → QF2
-  },
-  right: {
-    label: 'Llave Derecha',
-    upper: { octavos: [4, 5], label: 'Bloque Superior' },  // Oct 5,6 → QF3
-    lower: { octavos: [6, 7], label: 'Bloque Inferior' },  // Oct 7,8 → QF4
-  },
-};
 
 // World Cup group standings calculation & simulation engine
 function computeGroupStandingsForGroup(
@@ -154,77 +142,6 @@ function computeGroupStandingsForGroup(
   return standings;
 }
 
-function getGroupStandingsWithStatus(
-  groupChar: string,
-  matchesList: Match[],
-  teamsList: Team[]
-): TeamStanding[] {
-  const currentStandings = computeGroupStandingsForGroup(groupChar, matchesList, teamsList);
-  const groupMatches = matchesList.filter(m => m.group === groupChar);
-  
-  const remainingMatches = groupMatches.filter(m => m.status !== 'finished');
-  
-  if (groupMatches.every(m => m.status === 'scheduled')) {
-    return currentStandings.map(s => ({
-      ...s,
-      status: 'scheduled' as const
-    }));
-  }
-  
-  if (remainingMatches.length === 0) {
-    return currentStandings.map((s, idx) => ({
-      ...s,
-      status: idx < 2 ? 'qualified' : 'eliminated'
-    }));
-  }
-  
-  const qualificationCount: Record<string, number> = {};
-  const totalScenarios = Math.pow(3, remainingMatches.length);
-  
-  const teamCodes = currentStandings.map(s => s.teamCode);
-  teamCodes.forEach(code => {
-    qualificationCount[code] = 0;
-  });
-  
-  function simulate(matchIndex: number, simulatedMatches: Match[]) {
-    if (matchIndex === remainingMatches.length) {
-      const simStandings = computeGroupStandingsForGroup(groupChar, simulatedMatches, teamsList);
-      qualificationCount[simStandings[0].teamCode] += 1;
-      qualificationCount[simStandings[1].teamCode] += 1;
-      return;
-    }
-    
-    const match = remainingMatches[matchIndex];
-    
-    // Outcome 1: Home Win
-    const matchHomeWin = { ...match, homeScore: 1, awayScore: 0, status: 'finished' as const };
-    const matchesHomeWin = simulatedMatches.map(m => m.id === match.id ? matchHomeWin : m);
-    simulate(matchIndex + 1, matchesHomeWin);
-    
-    // Outcome 2: Draw
-    const matchDraw = { ...match, homeScore: 1, awayScore: 1, status: 'finished' as const };
-    const matchesDraw = simulatedMatches.map(m => m.id === match.id ? matchDraw : m);
-    simulate(matchIndex + 1, matchesDraw);
-    
-    // Outcome 3: Away Win
-    const matchAwayWin = { ...match, homeScore: 0, awayScore: 1, status: 'finished' as const };
-    const matchesAwayWin = simulatedMatches.map(m => m.id === match.id ? matchAwayWin : m);
-    simulate(matchIndex + 1, matchesAwayWin);
-  }
-  
-  simulate(0, matchesList);
-  
-  return currentStandings.map(s => {
-    const qualifiedScenarios = qualificationCount[s.teamCode];
-    let status: 'qualified' | 'eliminated' | 'in_play' = 'in_play';
-    if (qualifiedScenarios === totalScenarios) {
-      status = 'qualified';
-    } else if (qualifiedScenarios === 0) {
-      status = 'eliminated';
-    }
-    return { ...s, status };
-  });
-}
 
 // Standard scoring engine
 function calculatePoints(
