@@ -1623,7 +1623,7 @@ export default function App() {
                           )}
 
                           {/* Penalty radio for prediction — knockout draw only */}
-                          {!isMatchLocked && !GROUP_CODES.includes(match.group) &&
+                          {!isMatchLocked && predEdits[match.id] && !GROUP_CODES.includes(match.group) &&
                             localEdit.homeScore !== "" && localEdit.awayScore !== "" &&
                             parseInt(localEdit.homeScore) === parseInt(localEdit.awayScore) &&
                             !isNaN(parseInt(localEdit.homeScore)) && (
@@ -1725,6 +1725,11 @@ export default function App() {
                                   <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                     Predijo: {userPred.homeScore} -{" "}
                                     {userPred.awayScore}
+                                    {userPred.penaltyWinner && userPred.homeScore === userPred.awayScore && (
+                                      <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-1">
+                                        ({userPred.penaltyWinner === 'home' ? homeTeam?.name || match.homeTeam : awayTeam?.name || match.awayTeam} pen.)
+                                      </span>
+                                    )}
                                   </span>
                                 ) : !isMatchLocked ? (
                                   <span className="text-xs font-black text-rose-500 dark:text-rose-400 flex items-center gap-1 animate-pulse">
