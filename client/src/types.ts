@@ -14,6 +14,7 @@ export interface Match {
   awayScore: number | null; // Real score
   stadium: string;
   status: 'scheduled' | 'live' | 'finished';
+  penaltyWinner?: 'home' | 'away' | null;
 }
 
 export interface Prediction {
@@ -21,6 +22,7 @@ export interface Prediction {
   awayScore: number;
   createdAt: string;
   isBlocked?: boolean;
+  penaltyWinner?: 'home' | 'away' | null;
 }
 
 export interface User {

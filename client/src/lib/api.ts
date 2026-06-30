@@ -90,6 +90,7 @@ export async function fetchPredictions(
       awayScore: canSee ? (row['away_score'] as number) : null as unknown as number,
       isBlocked: !canSee,
       createdAt: row['created_at'] as string,
+      penaltyWinner: canSee ? (row['penalty_winner'] as 'home' | 'away' | null) : null,
     };
   }
 
@@ -104,6 +105,7 @@ export async function upsertPrediction(data: {
   matchId: string;
   homeScore: number;
   awayScore: number;
+  penaltyWinner?: 'home' | 'away' | null;
 }): Promise<void> {
   const { error } = await supabase.from('predictions').upsert(
     {
@@ -111,6 +113,7 @@ export async function upsertPrediction(data: {
       match_id: data.matchId,
       home_score: data.homeScore,
       away_score: data.awayScore,
+      penalty_winner: data.penaltyWinner ?? null,
     },
     { onConflict: 'user_id,match_id' },
   );
@@ -133,6 +136,7 @@ export async function updateMatch(
     awayScore?: number | null;
     status?: Match['status'];
     date?: string;
+    penaltyWinner?: 'home' | 'away' | null;
   },
 ): Promise<Match> {
   const adminClient = getAdminClient();
@@ -142,6 +146,7 @@ export async function updateMatch(
   if ('awayScore' in data) payload['away_score'] = data.awayScore;
   if ('status' in data) payload['status'] = data.status;
   if ('date' in data) payload['date'] = data.date;
+  if ('penaltyWinner' in data) payload['penalty_winner'] = data.penaltyWinner ?? null;
 
   const { data: updated, error } = await adminClient
     .from('matches')
@@ -176,7 +181,7 @@ export async function resetMatches(): Promise<void> {
   const adminClient = getAdminClient();
   const { error } = await adminClient
     .from('matches')
-    .update({ home_score: null, away_score: null, status: 'scheduled' })
+    .update({ home_score: null, away_score: null, status: 'scheduled', penalty_winner: null })
     .neq('id', '');
 
   if (error) throw new Error(`resetMatches: ${error.message}`);
@@ -240,6 +245,7 @@ export async function fetchAdminPredictions(): Promise<
       awayScore: row['away_score'] as number,
       isBlocked: false,
       createdAt: row['created_at'] as string,
+      penaltyWinner: row['penalty_winner'] as 'home' | 'away' | null,
     };
   }
 

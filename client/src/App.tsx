@@ -76,13 +76,35 @@ const BRACKET_OCTAVOS: [string, string][] = [
 function calculatePoints(
   match: Match,
   prediction: Prediction | undefined,
-): { points: number; type: "exact" | "diff" | "outcome" | "none" } {
+): { points: number; type: "exact" | "penalty" | "diff" | "outcome" | "none" } {
   if (!prediction || match.homeScore === null || match.awayScore === null) {
     return { points: 0, type: "none" };
   }
 
   const { homeScore: rHome, awayScore: rAway } = match;
   const { homeScore: pHome, awayScore: pAway } = prediction;
+
+  const isKnockout = !GROUP_CODES.includes(match.group);
+  const matchIsDraw = rHome === rAway;
+  const predIsDraw = pHome === pAway;
+
+  // Knockout draw branch — must run before existing logic
+  if (isKnockout && matchIsDraw && match.penaltyWinner) {
+    if (predIsDraw) {
+      // User predicted a draw: correct penalty winner = 5, wrong = 0
+      if (prediction.penaltyWinner === match.penaltyWinner) {
+        return { points: 5, type: "penalty" };
+      }
+      return { points: 0, type: "none" };
+    }
+    // User predicted a decisive result in a match that ended in a draw via penalties
+    return { points: 0, type: "none" };
+  }
+
+  // Knockout: if match ended decisively but user predicted a draw → 0
+  if (isKnockout && !matchIsDraw && predIsDraw) {
+    return { points: 0, type: "none" };
+  }
 
   // 1. Exact Match
   if (rHome === pHome && rAway === pAway) {
@@ -128,7 +150,11 @@ function getMatchWinner(match: Match): string | null {
   if (match.status !== 'finished' || match.homeScore === null || match.awayScore === null) return null;
   if (match.homeScore > match.awayScore) return match.homeTeam;
   if (match.awayScore > match.homeScore) return match.awayTeam;
-  return null; // draw in knockout = penalties, handle manually via DB
+  // Knockout draw resolved via penalties
+  if (match.homeScore === match.awayScore && !GROUP_CODES.includes(match.group) && match.penaltyWinner) {
+    return match.penaltyWinner === 'home' ? match.homeTeam : match.awayTeam;
+  }
+  return null;
 }
 
 function mapMatchStatus(match: Match): Match {
@@ -328,7 +354,7 @@ export default function App() {
   const [adminEdits, setAdminEdits] = useState<
     Record<
       string,
-      { homeScore: string; awayScore: string; status: Match["status"] }
+      { homeScore: string; awayScore: string; status: Match["status"]; penaltyWinner?: string | null }
     >
   >({});
   const [editingFinishedMatches, setEditingFinishedMatches] = useState<Record<string, boolean>>({});
@@ -339,7 +365,7 @@ export default function App() {
 
   // States for employee predictions editing
   const [predEdits, setPredEdits] = useState<
-    Record<string, { homeScore: string; awayScore: string }>
+    Record<string, { homeScore: string; awayScore: string; penaltyWinner?: string | null }>
   >({});
 
   // Auth helper
@@ -437,28 +463,12 @@ export default function App() {
           if (match.status === "finished") {
             const pred = userPredictions[match.id];
             if (pred && pred.homeScore !== null && pred.awayScore !== null) {
-              const rH = match.homeScore!;
-              const rA = match.awayScore!;
-              const pH = pred.homeScore;
-              const pA = pred.awayScore;
-
-              if (rH === pH && rA === pA) {
-                points += 5;
-                exactMatches++;
-              } else {
-                const rDiff = rH - rA;
-                const pDiff = pH - pA;
-                const rSign = Math.sign(rDiff);
-                const pSign = Math.sign(pDiff);
-
-                if (rDiff === pDiff && rSign === pSign) {
-                  points += 3;
-                  diffMatches++;
-                } else if (rSign === pSign) {
-                  points += 2;
-                  outcomeMatches++;
-                }
-              }
+              const res = calculatePoints(match, pred);
+              points += res.points;
+              if (res.type === "exact") exactMatches++;
+              else if (res.type === "diff") diffMatches++;
+              else if (res.type === "outcome") outcomeMatches++;
+              // "penalty" type: points counted but not tracked as exactMatch
             }
           }
         });
@@ -517,6 +527,7 @@ export default function App() {
               const res = calculatePoints(match, pred);
               points += res.points;
               if (res.type === "exact") exactMatches++;
+              else if (res.type === "penalty") { /* penalty win: points counted, not an exactMatch */ }
               else if (res.type === "diff") diffMatches++;
               else if (res.type === "outcome") outcomeMatches++;
             }
@@ -603,12 +614,26 @@ export default function App() {
       return;
     }
 
+    const isKnockout = !GROUP_CODES.includes(match?.group ?? '');
+    const scoresAreEqual = homeScore === awayScore;
+    if (isKnockout && scoresAreEqual && !edit.penaltyWinner) {
+      setErrorModalMsg(
+        "En partidos de eliminación directa con empate, debés seleccionar el ganador por penales.",
+      );
+      return;
+    }
+
+    const penaltyWinner = isKnockout && scoresAreEqual
+      ? (edit.penaltyWinner as 'home' | 'away' | null | undefined)
+      : null;
+
     try {
       await upsertPrediction({
         userId: currentUser.id,
         matchId,
         homeScore,
         awayScore,
+        penaltyWinner,
       });
 
       setPredictions((prev) => {
@@ -621,6 +646,7 @@ export default function App() {
               homeScore,
               awayScore,
               createdAt: new Date().toISOString(),
+              penaltyWinner: penaltyWinner ?? null,
             },
           },
         };
@@ -655,8 +681,22 @@ export default function App() {
       return;
     }
 
+    const isKnockout = !GROUP_CODES.includes(matches.find(m => m.id === matchId)?.group ?? '');
+    const scoresAreEqual = homeScore !== null && awayScore !== null && homeScore === awayScore;
+
+    if (isKnockout && scoresAreEqual && !edit.penaltyWinner) {
+      setErrorModalMsg(
+        "En partidos de eliminación directa con empate, debés seleccionar el ganador por penales.",
+      );
+      return;
+    }
+
     try {
-      await updateMatch(matchId, { homeScore, awayScore, status: edit.status });
+      const penaltyWinner = isKnockout && scoresAreEqual
+        ? (edit.penaltyWinner as 'home' | 'away' | null | undefined)
+        : null;
+
+      await updateMatch(matchId, { homeScore, awayScore, status: edit.status, penaltyWinner });
 
       setMatches((prev) =>
         prev.map((m) =>
@@ -666,6 +706,7 @@ export default function App() {
                 homeScore,
                 awayScore,
                 status: edit.status,
+                penaltyWinner: penaltyWinner ?? null,
               })
             : m,
         ),
@@ -1503,6 +1544,9 @@ export default function App() {
                                     value={localEdit.homeScore}
                                     onChange={(e) => {
                                       const val = e.target.value;
+                                      const newHome = parseInt(val);
+                                      const currentAway = parseInt(localEdit.awayScore);
+                                      const scoresWillDiverge = !isNaN(newHome) && !isNaN(currentAway) && newHome !== currentAway;
                                       setPredEdits((prev) => ({
                                         ...prev,
                                         [match.id]: {
@@ -1511,6 +1555,7 @@ export default function App() {
                                             awayScore: localEdit.awayScore,
                                           }),
                                           homeScore: val,
+                                          penaltyWinner: scoresWillDiverge ? null : prev[match.id]?.penaltyWinner,
                                         },
                                       }));
                                     }}
@@ -1526,6 +1571,9 @@ export default function App() {
                                     value={localEdit.awayScore}
                                     onChange={(e) => {
                                       const val = e.target.value;
+                                      const newAway = parseInt(val);
+                                      const currentHome = parseInt(localEdit.homeScore);
+                                      const scoresWillDiverge = !isNaN(newAway) && !isNaN(currentHome) && currentHome !== newAway;
                                       setPredEdits((prev) => ({
                                         ...prev,
                                         [match.id]: {
@@ -1534,6 +1582,7 @@ export default function App() {
                                             awayScore: "",
                                           }),
                                           awayScore: val,
+                                          penaltyWinner: scoresWillDiverge ? null : prev[match.id]?.penaltyWinner,
                                         },
                                       }));
                                     }}
@@ -1561,6 +1610,63 @@ export default function App() {
                               </span>
                             </div>
                           </div>
+
+                          {/* Penalty winner display for finished knockout draws */}
+                          {match.status === "finished" && match.penaltyWinner &&
+                            match.homeScore === match.awayScore &&
+                            !GROUP_CODES.includes(match.group) && (
+                            <div className="flex justify-center mt-1 mb-1">
+                              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                                Pen. {match.penaltyWinner === 'home' ? homeTeam?.name || match.homeTeam : awayTeam?.name || match.awayTeam}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Penalty radio for prediction — knockout draw only */}
+                          {!isMatchLocked && !GROUP_CODES.includes(match.group) &&
+                            localEdit.homeScore !== "" && localEdit.awayScore !== "" &&
+                            parseInt(localEdit.homeScore) === parseInt(localEdit.awayScore) &&
+                            !isNaN(parseInt(localEdit.homeScore)) && (
+                            <div className="flex flex-col items-center gap-1.5 mt-2 mb-1">
+                              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                Ganador por Penales
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`penalty-pred-${match.id}`}
+                                    value="home"
+                                    checked={localEdit.penaltyWinner === 'home'}
+                                    onChange={() => setPredEdits((prev) => ({
+                                      ...prev,
+                                      [match.id]: { ...(prev[match.id] || { homeScore: localEdit.homeScore, awayScore: localEdit.awayScore }), penaltyWinner: 'home' },
+                                    }))}
+                                    className="accent-amber-500"
+                                  />
+                                  <span className="text-xs font-bold text-text-secondary">
+                                    {homeTeam?.name || match.homeTeam}
+                                  </span>
+                                </label>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`penalty-pred-${match.id}`}
+                                    value="away"
+                                    checked={localEdit.penaltyWinner === 'away'}
+                                    onChange={() => setPredEdits((prev) => ({
+                                      ...prev,
+                                      [match.id]: { ...(prev[match.id] || { homeScore: localEdit.homeScore, awayScore: localEdit.awayScore }), penaltyWinner: 'away' },
+                                    }))}
+                                    className="accent-amber-500"
+                                  />
+                                  <span className="text-xs font-bold text-text-secondary">
+                                    {awayTeam?.name || match.awayTeam}
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Save & Prediction Status Bar */}
                           <div className="mt-4 pt-3 border-t border-border-color flex flex-col gap-2">
@@ -1648,7 +1754,9 @@ export default function App() {
                                                 : "bg-slate-100 dark:bg-slate-900 border-border-color text-text-muted"
                                       }`}
                                     >
-                                      {pointsEarned.points > 0 ? (
+                                      {pointsEarned.type === "penalty" ? (
+                                        <>⚽ +{pointsEarned.points} pts (pen.)</>
+                                      ) : pointsEarned.points > 0 ? (
                                         <>🎉 +{pointsEarned.points} pts</>
                                       ) : pointsEarned.points === -1 ? (
                                         <>⚠️ -1 pt (No pronosticado)</>
@@ -1658,15 +1766,28 @@ export default function App() {
                                     </div>
                                   )
                                 : /* Save Button */
-                                  predEdits[match.id] && (
-                                    <button
-                                      onClick={() => savePrediction(match.id)}
-                                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1 cursor-pointer"
-                                    >
-                                      <Save className="w-3.5 h-3.5" />{" "}
-                                      {userPred ? "Modificar" : "Guardar"}
-                                    </button>
-                                  )}
+                                  predEdits[match.id] && (() => {
+                                    const isKnockoutMatch = !GROUP_CODES.includes(match.group);
+                                    const editHome = parseInt(predEdits[match.id]?.homeScore ?? '');
+                                    const editAway = parseInt(predEdits[match.id]?.awayScore ?? '');
+                                    const isKnockoutDraw = isKnockoutMatch && !isNaN(editHome) && !isNaN(editAway) && editHome === editAway;
+                                    const penaltySelected = !!predEdits[match.id]?.penaltyWinner;
+                                    const isSaveDisabled = isKnockoutDraw && !penaltySelected;
+                                    return (
+                                      <button
+                                        onClick={() => savePrediction(match.id)}
+                                        disabled={isSaveDisabled}
+                                        className={`px-3 py-1.5 font-bold rounded-lg text-xs transition-all flex items-center gap-1 ${
+                                          isSaveDisabled
+                                            ? "bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-60"
+                                            : "bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+                                        }`}
+                                      >
+                                        <Save className="w-3.5 h-3.5" />{" "}
+                                        {userPred ? "Modificar" : "Guardar"}
+                                      </button>
+                                    );
+                                  })()}
                             </div>
                           </div>
                         </div>
@@ -2400,6 +2521,7 @@ export default function App() {
                             ? match.awayScore.toString()
                             : "",
                         status: match.status,
+                        penaltyWinner: match.penaltyWinner ?? undefined,
                       };
 
                       return (
@@ -2454,6 +2576,9 @@ export default function App() {
                                     disabled={!isEditing}
                                     onChange={(e) => {
                                       const val = e.target.value;
+                                      const newHome = parseInt(val);
+                                      const currentAway = parseInt(editState.awayScore);
+                                      const scoresDiverge = !isNaN(newHome) && !isNaN(currentAway) && newHome !== currentAway;
                                       setAdminEdits((prev) => ({
                                         ...prev,
                                         [match.id]: {
@@ -2463,6 +2588,7 @@ export default function App() {
                                             status: editState.status,
                                           }),
                                           homeScore: val,
+                                          penaltyWinner: scoresDiverge ? null : prev[match.id]?.penaltyWinner,
                                         },
                                       }));
                                     }}
@@ -2476,6 +2602,9 @@ export default function App() {
                                     disabled={!isEditing}
                                     onChange={(e) => {
                                       const val = e.target.value;
+                                      const newAway = parseInt(val);
+                                      const currentHome = parseInt(editState.homeScore);
+                                      const scoresDiverge = !isNaN(newAway) && !isNaN(currentHome) && currentHome !== newAway;
                                       setAdminEdits((prev) => ({
                                         ...prev,
                                         [match.id]: {
@@ -2485,12 +2614,55 @@ export default function App() {
                                             status: editState.status,
                                           }),
                                           awayScore: val,
+                                          penaltyWinner: scoresDiverge ? null : prev[match.id]?.penaltyWinner,
                                         },
                                       }));
                                     }}
                                     className="w-14 h-9 text-center bg-bg-input border border-border-color rounded-lg text-sm font-bold text-text-primary focus:outline-none focus:border-amber-500 placeholder:text-[9px] placeholder:text-center placeholder:font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                   />
                                 </div>
+
+                                {/* Penalty radio for admin — knockout draw only */}
+                                {isEditing && !GROUP_CODES.includes(match.group) &&
+                                  editState.homeScore !== "" && editState.awayScore !== "" &&
+                                  parseInt(editState.homeScore) === parseInt(editState.awayScore) &&
+                                  !isNaN(parseInt(editState.homeScore)) && (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                      Penales
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <label className="flex items-center gap-1 cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          name={`penalty-admin-${match.id}`}
+                                          value="home"
+                                          checked={editState.penaltyWinner === 'home'}
+                                          onChange={() => setAdminEdits((prev) => ({
+                                            ...prev,
+                                            [match.id]: { ...(prev[match.id] || { homeScore: editState.homeScore, awayScore: editState.awayScore, status: editState.status }), penaltyWinner: 'home' },
+                                          }))}
+                                          className="accent-amber-500"
+                                        />
+                                        <span className="text-[10px] font-bold text-text-secondary">{homeTeam?.name || match.homeTeam}</span>
+                                      </label>
+                                      <label className="flex items-center gap-1 cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          name={`penalty-admin-${match.id}`}
+                                          value="away"
+                                          checked={editState.penaltyWinner === 'away'}
+                                          onChange={() => setAdminEdits((prev) => ({
+                                            ...prev,
+                                            [match.id]: { ...(prev[match.id] || { homeScore: editState.homeScore, awayScore: editState.awayScore, status: editState.status }), penaltyWinner: 'away' },
+                                          }))}
+                                          className="accent-amber-500"
+                                        />
+                                        <span className="text-[10px] font-bold text-text-secondary">{awayTeam?.name || match.awayTeam}</span>
+                                      </label>
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* Status selector */}
                                 <select
@@ -2529,14 +2701,27 @@ export default function App() {
                                     </button>
                                   ) : (
                                     <div className="flex items-center gap-1">
-                                      {adminEdits[match.id] && (
-                                        <button
-                                          onClick={() => saveMatchResult(match.id)}
-                                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
-                                        >
-                                          <Check className="w-3.5 h-3.5" /> Guardar
-                                        </button>
-                                      )}
+                                      {adminEdits[match.id] && (() => {
+                                        const adminIsKnockout = !GROUP_CODES.includes(match.group);
+                                        const adminHomeScore = parseInt(editState.homeScore);
+                                        const adminAwayScore = parseInt(editState.awayScore);
+                                        const adminIsKnockoutDraw = adminIsKnockout && !isNaN(adminHomeScore) && !isNaN(adminAwayScore) && adminHomeScore === adminAwayScore;
+                                        const adminPenaltySelected = !!editState.penaltyWinner;
+                                        const adminSaveDisabled = adminIsKnockoutDraw && !adminPenaltySelected;
+                                        return (
+                                          <button
+                                            onClick={() => saveMatchResult(match.id)}
+                                            disabled={adminSaveDisabled}
+                                            className={`px-3 py-1.5 font-bold rounded-lg text-xs transition-all flex items-center gap-1 shadow-sm ${
+                                              adminSaveDisabled
+                                                ? "bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-60"
+                                                : "bg-amber-600 hover:bg-amber-500 text-white cursor-pointer active:scale-98"
+                                            }`}
+                                          >
+                                            <Check className="w-3.5 h-3.5" /> Guardar
+                                          </button>
+                                        );
+                                      })()}
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -2558,14 +2743,27 @@ export default function App() {
                                     </div>
                                   )
                                 ) : (
-                                  adminEdits[match.id] && (
-                                    <button
-                                      onClick={() => saveMatchResult(match.id)}
-                                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs transition-all active:scale-98 cursor-pointer flex items-center gap-1 shadow-sm"
-                                    >
-                                      <Check className="w-3.5 h-3.5" /> Guardar
-                                    </button>
-                                  )
+                                  adminEdits[match.id] && (() => {
+                                    const adminIsKnockout = !GROUP_CODES.includes(match.group);
+                                    const adminHomeScore = parseInt(editState.homeScore);
+                                    const adminAwayScore = parseInt(editState.awayScore);
+                                    const adminIsKnockoutDraw = adminIsKnockout && !isNaN(adminHomeScore) && !isNaN(adminAwayScore) && adminHomeScore === adminAwayScore;
+                                    const adminPenaltySelected = !!editState.penaltyWinner;
+                                    const adminSaveDisabled = adminIsKnockoutDraw && !adminPenaltySelected;
+                                    return (
+                                      <button
+                                        onClick={() => saveMatchResult(match.id)}
+                                        disabled={adminSaveDisabled}
+                                        className={`px-3 py-1.5 font-bold rounded-lg text-xs transition-all flex items-center gap-1 shadow-sm ${
+                                          adminSaveDisabled
+                                            ? "bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-60"
+                                            : "bg-amber-600 hover:bg-amber-500 text-white cursor-pointer active:scale-98"
+                                        }`}
+                                      >
+                                        <Check className="w-3.5 h-3.5" /> Guardar
+                                      </button>
+                                    );
+                                  })()
                                 )}
                               </div>
                             );
