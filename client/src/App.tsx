@@ -54,6 +54,10 @@ const KNOCKOUT_PHASES: Record<string, string> = {
 
 const GROUP_CODES = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
+// Predictions are paused until midnight Argentina time (UTC-3) on Jul 6
+// After this point the pause flag auto-clears for all matches
+const PREDICTIONS_RESUME_AT = new Date("2026-07-06T03:00:00.000Z");
+
 // Full bracket: R16 pairs → Octavos → Cuartos → Semi → Final
 // Each pair: [matchA, matchB] → winners play each other in Octavos
 const BRACKET_OCTAVOS: [string, string][] = [
@@ -66,6 +70,29 @@ const BRACKET_OCTAVOS: [string, string][] = [
   ['M87', 'M86'], // Oct 7: Argentina/C.Verde vs Australia/Egipto
   ['M85', 'M88'], // Oct 8: Suiza/Argelia vs Colombia/Ghana
 ];
+
+// Source match for each TBD slot: matchId → { home, away }
+const TBD_SOURCES: Record<string, { home?: string; away?: string }> = {
+  M89: { home: 'M75', away: 'M78' }, M90: { home: 'M73', away: 'M76' },
+  M91: { home: 'M74', away: 'M77' }, M92: { home: 'M79', away: 'M80' },
+  M93: { home: 'M84', away: 'M83' }, M94: { home: 'M82', away: 'M81' },
+  M95: { home: 'M87', away: 'M86' }, M96: { home: 'M85', away: 'M88' },
+  M97: { home: 'M89', away: 'M90' }, M98: { home: 'M93', away: 'M94' },
+  M99: { home: 'M91', away: 'M92' }, M100: { home: 'M95', away: 'M96' },
+  M101: { home: 'M97', away: 'M98' }, M102: { home: 'M99', away: 'M100' },
+  M103: { home: 'M101', away: 'M102' }, M104: { home: 'M101', away: 'M102' },
+};
+
+function resolveTeamName(
+  code: string,
+  team: { name: string } | undefined,
+  matchId: string,
+  slot: 'home' | 'away',
+): string {
+  if (code !== 'tbd') return team?.name || code;
+  const source = slot === 'home' ? TBD_SOURCES[matchId]?.home : TBD_SOURCES[matchId]?.away;
+  return source ? `Gan. ${source}` : 'Por definir';
+}
 
 // Bracket sides for display
 
@@ -1456,10 +1483,15 @@ export default function App() {
                           : "",
                       };
 
+                      const isPausedMatch =
+                        new Date() < PREDICTIONS_RESUME_AT &&
+                        new Date(match.date) <= PREDICTIONS_RESUME_AT;
+
                       const isMatchLocked =
                         match.status === "finished" ||
                         match.status === "live" ||
-                        new Date() >= new Date(match.date);
+                        new Date() >= new Date(match.date) ||
+                        isPausedMatch;
 
                       // Calculate potential/earned points for this match card
                       const pointsEarned =
@@ -1491,7 +1523,12 @@ export default function App() {
                                 Finalizado
                               </span>
                             )}
-                            {match.status === "scheduled" && (
+                            {match.status === "scheduled" && isPausedMatch && (
+                              <span className="bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                🔒 Cerrado
+                              </span>
+                            )}
+                            {match.status === "scheduled" && !isPausedMatch && (
                               <span className="bg-bg-input border border-border-color text-text-muted font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" /> Pendiente
                               </span>
@@ -1514,7 +1551,7 @@ export default function App() {
                               />
                               <span className="text-xs font-bold text-center text-text-secondary w-24 truncate">
                                 {homeScoreReplacement(
-                                  homeTeam?.name || match.homeTeam,
+                                  resolveTeamName(match.homeTeam, homeTeam, match.id, 'home'),
                                 )}
                               </span>
                             </div>
@@ -1522,6 +1559,15 @@ export default function App() {
                             {/* Scores Container */}
                             <div className="flex items-center gap-2">
                               {isMatchLocked ? (
+                                isPausedMatch && match.status === "scheduled" ? (
+                                  /* Predictions paused — resumes tomorrow */
+                                  <div className="flex flex-col items-center gap-1 px-2">
+                                    <span className="text-lg">🔒</span>
+                                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 text-center leading-tight">
+                                      Mañana retomamos<br />los pronósticos
+                                    </span>
+                                  </div>
+                                ) : (
                                 /* Locked Scores Display (Live or Finished) */
                                 <div className="flex items-center gap-2">
                                   <span className="text-2xl font-black text-text-primary w-8 text-center bg-bg-input rounded-lg py-1 border border-border-color">
@@ -1534,6 +1580,7 @@ export default function App() {
                                     {match.awayScore ?? "-"}
                                   </span>
                                 </div>
+                                )
                               ) : (
                                 /* Editable Score Predictions */
                                 <div className="flex items-center gap-1.5">
@@ -1605,7 +1652,7 @@ export default function App() {
                               />
                               <span className="text-xs font-bold text-center text-text-secondary w-24 truncate">
                                 {homeScoreReplacement(
-                                  awayTeam?.name || match.awayTeam,
+                                  resolveTeamName(match.awayTeam, awayTeam, match.id, 'away'),
                                 )}
                               </span>
                             </div>
@@ -1710,7 +1757,7 @@ export default function App() {
                                 </span>
                               </div>
                               <span className="truncate max-w-[120px] text-[10px] sm:text-xs self-start text-right">
-                                {match.stadium}
+                                {match.stadium === 'TBD' ? match.id : match.stadium}
                               </span>
                             </div>
 
@@ -2107,18 +2154,28 @@ export default function App() {
                     {teams.map(({ code, score, team }, i) => {
                       const isWinner = winner === code;
                       const isLoser = !!winner && !isWinner;
+                      const isTbd = code === 'tbd';
+                      const sourceMatch = isTbd
+                        ? (i === 0 ? TBD_SOURCES[m.id]?.home : TBD_SOURCES[m.id]?.away)
+                        : null;
+                      const displayName = isTbd
+                        ? (sourceMatch ? `Gan. ${sourceMatch}` : 'Por definir')
+                        : homeScoreReplacement(team?.name || code);
                       return (
-                        <div key={code} className={`flex items-center gap-1.5 px-2 py-1 ${i === 0 ? 'border-b border-border-color/40' : ''} ${isWinner ? 'bg-emerald-500/10' : ''} ${mirrored ? 'flex-row-reverse' : ''}`}>
-                          <img
-                            src={`https://flagcdn.com/w20/${code}.png`}
-                            className="w-5 h-3.5 object-cover rounded-sm border border-border-color/50 shrink-0"
-                            alt=""
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }}
-                          />
-                          <span className={`text-[11px] font-semibold flex-1 truncate ${isWinner ? 'text-emerald-400' : isLoser ? 'text-text-muted' : 'text-text-primary'} ${mirrored ? 'text-right' : ''}`}>
-                            {homeScoreReplacement(team?.name || code)}
+                        <div key={`${code}-${i}`} className={`flex items-center gap-1.5 px-2 py-1 ${i === 0 ? 'border-b border-border-color/40' : ''} ${isWinner ? 'bg-emerald-500/10' : ''} ${mirrored ? 'flex-row-reverse' : ''}`}>
+                          {!isTbd && (
+                            <img
+                              src={`https://flagcdn.com/w20/${code}.png`}
+                              className="w-5 h-3.5 object-cover rounded-sm border border-border-color/50 shrink-0"
+                              alt=""
+                              onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }}
+                            />
+                          )}
+                          {isTbd && <span className="w-5 h-3.5 shrink-0 flex items-center justify-center text-[9px] text-text-muted">?</span>}
+                          <span className={`text-[11px] font-semibold flex-1 truncate ${isTbd ? 'text-text-muted italic' : isWinner ? 'text-emerald-400' : isLoser ? 'text-text-muted' : 'text-text-primary'} ${mirrored ? 'text-right' : ''}`}>
+                            {displayName}
                           </span>
-                          {m.status !== 'scheduled' && (
+                          {m.status !== 'scheduled' && !isTbd && (
                             <span className={`text-[11px] font-black shrink-0 ${isWinner ? 'text-emerald-400' : 'text-text-muted'}`}>
                               {score ?? '-'}
                             </span>
@@ -2189,17 +2246,16 @@ export default function App() {
                 </div>
               );
 
-              // A pair of R16 matches connected to their Octavos slot
+              // A pair of R16 matches connected to their Octavos match cell
               const R16Pair = ({
                 matchIds,
-                octWinner,
+                r8MatchId,
                 mirrored,
               }: {
                 matchIds: [string, string];
-                octWinner: string | null;
+                r8MatchId: string;
                 mirrored?: boolean;
               }) => {
-                const octLabel = mirrored ? 'Octavos ←' : 'Octavos →';
                 return (
                   <div className={`flex items-center gap-0 ${mirrored ? 'flex-row-reverse' : ''}`}>
                     {/* R16 matches stacked */}
@@ -2207,68 +2263,63 @@ export default function App() {
                       <R16Cell matchId={matchIds[0]} mirrored={mirrored} />
                       <R16Cell matchId={matchIds[1]} mirrored={mirrored} />
                     </div>
-                    {/* connectors to octavos */}
+                    {/* connectors to octavos match */}
                     <div className={`flex flex-col self-stretch ${mirrored ? 'flex-row-reverse' : ''}`}>
                       <Connector top mirrored={mirrored} />
                       <Connector mirrored={mirrored} />
                     </div>
-                    {/* octavos slot */}
-                    <RoundSlot teamCode={octWinner} label={octLabel} accent="indigo" mirrored={mirrored} />
+                    {/* octavos match cell (M89–M96) */}
+                    <R16Cell matchId={r8MatchId} mirrored={mirrored} />
                   </div>
                 );
               };
 
-              // Build octavos winners (R16 winners advance to octavos)
-              const octWinners = BRACKET_OCTAVOS.map(([m1, m2]) => {
-                const w1 = getWinnerCode(m1);
-                const w2 = getWinnerCode(m2);
-                // Both must be determined for octavos match to exist
-                return { w1, w2 };
-              });
-
-              // For bracket display: octavos match winner is tracked via a future match
-              // For now we display the two R16 winners as the octavos participants
-              // and leave cuartos/semi/final as "Por definir" (no octavos/cuartos matches yet)
-
               // Left side: indices 0-3 → upper block (0,1) + lower block (2,3)
               // Right side: indices 4-7 → upper block (4,5) + lower block (6,7)
 
-              const BracketHalf = ({ indices, mirrored }: { indices: [number, number, number, number]; mirrored?: boolean }) => {
+              const BracketHalf = ({
+                indices,
+                mirrored,
+                r8MatchIds,
+                qfMatchIds,
+                sfMatchId,
+              }: {
+                indices: [number, number, number, number];
+                mirrored?: boolean;
+                r8MatchIds: [string, string, string, string];
+                qfMatchIds: [string, string];
+                sfMatchId: string;
+              }) => {
                 const [i0, i1, i2, i3] = indices;
-                const oct0Winner = octWinners[i0];
-                const oct1Winner = octWinners[i1];
-                const oct2Winner = octWinners[i2];
-                const oct3Winner = octWinners[i3];
 
-                const qfLabel = mirrored ? 'Cuartos ←' : 'Cuartos →';
                 const sfLabel = mirrored ? 'Semi ←' : 'Semi →';
 
                 return (
                   <div className={`flex items-center gap-0 ${mirrored ? 'flex-row-reverse' : ''}`}>
-                    {/* Upper + Lower R16 pairs → Octavos → Cuartos → Semi */}
+                    {/* Upper + Lower R16 pairs → Octavos match cell → Cuartos → Semi */}
                     <div className="flex flex-col gap-3">
                       {/* Upper block */}
                       <div className="flex flex-col gap-2">
-                        <R16Pair matchIds={BRACKET_OCTAVOS[i0]} octWinner={oct0Winner.w1 && oct0Winner.w2 ? null : (oct0Winner.w1 ?? oct0Winner.w2)} mirrored={mirrored} />
-                        <R16Pair matchIds={BRACKET_OCTAVOS[i1]} octWinner={oct1Winner.w1 && oct1Winner.w2 ? null : (oct1Winner.w1 ?? oct1Winner.w2)} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i0]} r8MatchId={r8MatchIds[0]} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i1]} r8MatchId={r8MatchIds[1]} mirrored={mirrored} />
                       </div>
                       {/* Lower block */}
                       <div className="flex flex-col gap-2">
-                        <R16Pair matchIds={BRACKET_OCTAVOS[i2]} octWinner={oct2Winner.w1 && oct2Winner.w2 ? null : (oct2Winner.w1 ?? oct2Winner.w2)} mirrored={mirrored} />
-                        <R16Pair matchIds={BRACKET_OCTAVOS[i3]} octWinner={oct3Winner.w1 && oct3Winner.w2 ? null : (oct3Winner.w1 ?? oct3Winner.w2)} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i2]} r8MatchId={r8MatchIds[2]} mirrored={mirrored} />
+                        <R16Pair matchIds={BRACKET_OCTAVOS[i3]} r8MatchId={r8MatchIds[3]} mirrored={mirrored} />
                       </div>
                     </div>
 
-                    {/* Connectors upper+lower octavos → cuartos */}
+                    {/* Connectors octavos → cuartos */}
                     <div className="flex flex-col self-stretch">
                       <Connector top mirrored={mirrored} />
                       <Connector mirrored={mirrored} />
                     </div>
 
-                    {/* Cuartos column: 2 slots */}
+                    {/* Cuartos column: match cells (show participants, not winner) */}
                     <div className="flex flex-col gap-3 justify-around self-stretch py-4">
-                      <RoundSlot teamCode={null} label={qfLabel} accent="amber" mirrored={mirrored} />
-                      <RoundSlot teamCode={null} label={qfLabel} accent="amber" mirrored={mirrored} />
+                      <R16Cell matchId={qfMatchIds[0]} mirrored={mirrored} />
+                      <R16Cell matchId={qfMatchIds[1]} mirrored={mirrored} />
                     </div>
 
                     {/* Connectors cuartos → semi */}
@@ -2279,7 +2330,7 @@ export default function App() {
 
                     {/* Semi */}
                     <div className="flex flex-col justify-center self-stretch py-4">
-                      <RoundSlot teamCode={null} label={sfLabel} accent="purple" mirrored={mirrored} />
+                      <RoundSlot teamCode={getWinnerCode(sfMatchId)} label={sfLabel} accent="purple" mirrored={mirrored} />
                     </div>
 
                     {/* Connector semi → final */}
@@ -2310,27 +2361,61 @@ export default function App() {
                       {/* Main bracket */}
                       <div className="flex items-center justify-center gap-0">
                         {/* Left bracket */}
-                        <BracketHalf indices={[0, 1, 2, 3]} />
+                        <BracketHalf
+                          indices={[0, 1, 2, 3]}
+                          r8MatchIds={['M89', 'M90', 'M93', 'M94']}
+                          qfMatchIds={['M97', 'M98']}
+                          sfMatchId="M101"
+                        />
 
                         {/* Final */}
-                        <div className="flex flex-col items-center justify-center px-2 self-stretch py-4">
-                          <div className="w-36 shrink-0 rounded-xl border-2 border-amber-400/50 bg-amber-500/8 backdrop-blur-sm px-3 py-3 text-center shadow-lg shadow-amber-500/10">
-                            <div className="flex items-center justify-center gap-1.5 mb-2">
-                              <Trophy className="w-4 h-4 text-amber-400" />
-                              <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Final</span>
+                        {(() => {
+                          const finalMatch = matches.find(m => m.id === 'M104');
+                          const sf1Winner = getWinnerCode('M101');
+                          const sf2Winner = getWinnerCode('M102');
+                          const champion = getWinnerCode('M104');
+                          const renderTeam = (code: string | null) => {
+                            if (!code) return <div className="text-[11px] text-text-muted italic">Por definir</div>;
+                            const t = TEAMS.find(t => t.code === code);
+                            return (
+                              <div className="flex items-center justify-center gap-1.5">
+                                <img src={`https://flagcdn.com/w20/${code}.png`} className="w-5 h-3.5 object-cover rounded-sm" alt="" onError={e => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }} />
+                                <span className={`text-[11px] font-bold ${champion === code ? 'text-amber-400' : 'text-text-primary'}`}>{t?.name || code}</span>
+                              </div>
+                            );
+                          };
+                          return (
+                            <div className="flex flex-col items-center justify-center px-2 self-stretch py-4">
+                              <div className="w-36 shrink-0 rounded-xl border-2 border-amber-400/50 bg-amber-500/8 backdrop-blur-sm px-3 py-3 text-center shadow-lg shadow-amber-500/10">
+                                <div className="flex items-center justify-center gap-1.5 mb-2">
+                                  <Trophy className="w-4 h-4 text-amber-400" />
+                                  <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Final</span>
+                                </div>
+                                <div className="border-t border-amber-400/20 pt-2 mb-1.5">
+                                  {renderTeam(sf1Winner)}
+                                </div>
+                                <div className="text-[10px] text-text-muted">vs</div>
+                                <div className="mt-1.5">
+                                  {renderTeam(sf2Winner)}
+                                </div>
+                                {finalMatch?.status === 'finished' && champion && (
+                                  <div className="mt-2 pt-2 border-t border-amber-400/20">
+                                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-wider">🏆 Campeón</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="border-t border-amber-400/20 pt-2 mb-1.5">
-                              <div className="text-[11px] text-text-muted italic">Por definir</div>
-                            </div>
-                            <div className="text-[10px] text-text-muted">vs</div>
-                            <div className="mt-1.5">
-                              <div className="text-[11px] text-text-muted italic">Por definir</div>
-                            </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
 
                         {/* Right bracket */}
-                        <BracketHalf indices={[4, 5, 6, 7]} mirrored />
+                        <BracketHalf
+                          indices={[4, 5, 6, 7]}
+                          r8MatchIds={['M91', 'M92', 'M95', 'M96']}
+                          qfMatchIds={['M99', 'M100']}
+                          sfMatchId="M102"
+                          mirrored
+                        />
                       </div>
                     </div>
                   </div>
@@ -3006,11 +3091,23 @@ export default function App() {
                             Predijo
                           </span>
                           {canSeePrediction ? (
-                            <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md border border-indigo-500/20 mt-0.5">
-                              {userPred
-                                ? `${userPred.homeScore} - ${userPred.awayScore}`
-                                : "-"}
-                            </span>
+                            <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                              <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                                {userPred
+                                  ? `${userPred.homeScore} - ${userPred.awayScore}`
+                                  : "-"}
+                              </span>
+                              {userPred &&
+                                userPred.penaltyWinner &&
+                                userPred.homeScore === userPred.awayScore &&
+                                !GROUP_CODES.includes(match.group) && (
+                                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                                  Pen. {userPred.penaltyWinner === 'home'
+                                    ? homeTeam?.name || match.homeTeam
+                                    : awayTeam?.name || match.awayTeam}
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span
                               className="font-semibold text-[10px] text-text-muted bg-slate-500/10 px-2 py-0.5 rounded-md border border-slate-500/20 mt-0.5 select-none"
@@ -3025,11 +3122,23 @@ export default function App() {
                           <span className="text-[8px] font-bold text-text-muted uppercase">
                             Real
                           </span>
-                          <span className="font-mono text-xs font-bold text-text-primary bg-bg-card px-2 py-0.5 rounded-md border border-border-color mt-0.5">
-                            {match.homeScore !== null
-                              ? `${match.homeScore} - ${match.awayScore}`
-                              : "Pte"}
-                          </span>
+                          <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                            <span className="font-mono text-xs font-bold text-text-primary bg-bg-card px-2 py-0.5 rounded-md border border-border-color">
+                              {match.homeScore !== null
+                                ? `${match.homeScore} - ${match.awayScore}`
+                                : "Pte"}
+                            </span>
+                            {match.status === "finished" &&
+                              match.penaltyWinner &&
+                              match.homeScore === match.awayScore &&
+                              !GROUP_CODES.includes(match.group) && (
+                              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                                Pen. {match.penaltyWinner === 'home'
+                                  ? homeTeam?.name || match.homeTeam
+                                  : awayTeam?.name || match.awayTeam}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Points badge */}
