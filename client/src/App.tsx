@@ -1464,6 +1464,13 @@ export default function App() {
                         m.awayTeam.toLowerCase().includes(searchLower)
                       );
                     })
+                    .sort((a, b) => {
+                      const stageOrder: Record<string, number> = { QF: 0, SF: 1, '3P': 2, FIN: 3 };
+                      const aOrder = stageOrder[a.group] ?? 99;
+                      const bOrder = stageOrder[b.group] ?? 99;
+                      if (aOrder !== bOrder) return aOrder - bOrder;
+                      return new Date(a.date).getTime() - new Date(b.date).getTime();
+                    })
                     .map((match) => {
                       const homeTeam = TEAMS.find(
                         (t) => t.code === match.homeTeam,
