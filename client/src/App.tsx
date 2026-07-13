@@ -2194,55 +2194,6 @@ export default function App() {
                 );
               };
 
-              // A single slot for rounds beyond R16 (Octavos / Cuartos / Semi / Final)
-              const RoundSlot = ({
-                teamCode,
-                label,
-                accent = 'indigo',
-                mirrored,
-                isChampion,
-              }: {
-                teamCode: string | null;
-                label: string;
-                accent?: 'indigo' | 'amber' | 'purple' | 'emerald';
-                mirrored?: boolean;
-                isChampion?: boolean;
-              }) => {
-                const team = teamCode ? TEAMS.find(t => t.code === teamCode) : null;
-                const accentMap: Record<string, string> = {
-                  indigo: 'border-indigo-500/30 bg-indigo-500/5',
-                  amber: 'border-amber-400/40 bg-amber-500/5',
-                  purple: 'border-purple-500/30 bg-purple-500/5',
-                  emerald: 'border-emerald-500/40 bg-emerald-500/8',
-                };
-                const labelMap: Record<string, string> = {
-                  indigo: 'text-indigo-400',
-                  amber: 'text-amber-400',
-                  purple: 'text-purple-400',
-                  emerald: 'text-emerald-400',
-                };
-                return (
-                  <div className={`w-36 shrink-0 rounded-lg border ${accentMap[accent]} px-2 py-2 backdrop-blur-sm`}>
-                    <div className={`text-[9px] font-bold uppercase tracking-wider mb-1.5 ${labelMap[accent]} ${mirrored ? 'text-right' : ''}`}>{label}</div>
-                    {team ? (
-                      <div className={`flex items-center gap-1.5 ${mirrored ? 'flex-row-reverse' : ''}`}>
-                        <img
-                          src={`https://flagcdn.com/w20/${team.code}.png`}
-                          className="w-5 h-3.5 object-cover rounded-sm border border-border-color/50 shrink-0"
-                          alt=""
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://flagcdn.com/w20/un.png'; }}
-                        />
-                        <span className={`text-[11px] font-bold truncate ${isChampion ? 'text-amber-400' : 'text-emerald-400'}`}>
-                          {homeScoreReplacement(team.name)}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className={`text-[11px] text-text-muted italic ${mirrored ? 'text-right' : ''}`}>Por definir</div>
-                    )}
-                  </div>
-                );
-              };
-
               // Bracket connector — the "]" / "[" lines between rounds
               const Connector = ({ top, mirrored }: { top?: boolean; mirrored?: boolean }) => (
                 <div className="w-4 shrink-0 self-stretch flex flex-col">
@@ -2299,8 +2250,6 @@ export default function App() {
               }) => {
                 const [i0, i1, i2, i3] = indices;
 
-                const sfLabel = mirrored ? 'Semi ←' : 'Semi →';
-
                 return (
                   <div className={`flex items-center gap-0 ${mirrored ? 'flex-row-reverse' : ''}`}>
                     {/* Upper + Lower R16 pairs → Octavos match cell → Cuartos → Semi */}
@@ -2337,7 +2286,7 @@ export default function App() {
 
                     {/* Semi */}
                     <div className="flex flex-col justify-center self-stretch py-4">
-                      <RoundSlot teamCode={getWinnerCode(sfMatchId)} label={sfLabel} accent="purple" mirrored={mirrored} />
+                      <R16Cell matchId={sfMatchId} mirrored={mirrored} />
                     </div>
 
                     {/* Connector semi → final */}
